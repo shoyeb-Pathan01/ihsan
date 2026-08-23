@@ -21,6 +21,10 @@ export async function GET() {
       );
     }
 
+    const sessions = await prisma.azureSession.findMany({
+      orderBy: { session_number: "asc" },
+    });
+
     const allTopics = azureGoal.modules.flatMap((m) => m.topics);
 
     const totalTopics = allTopics.length;
@@ -63,6 +67,11 @@ export async function GET() {
           mastery_percentage: t.mastery_percentage,
           confidence: t.confidence,
         })),
+      })),
+      sessions: sessions.map((s) => ({
+        session_number: s.session_number,
+        title: s.title,
+        drive_link: s.drive_link,
       })),
       overallCompletion,
       overallMastery,

@@ -33,6 +33,7 @@ interface Module {
 
 interface AzureData {
   modules: Module[];
+  sessions: { session_number: number; title: string; drive_link: string }[];
   overallCompletion: number;
   overallMastery: number;
   totalTopics: number;
@@ -223,22 +224,37 @@ export default function AzurePage() {
         </div>
       </div>
 
-      {/* Sessions Link */}
-      <Link
-        href="/sessions"
-        className="glass-card rounded-xl p-4 flex items-center justify-between hover:border-azure/40 transition-colors group"
-      >
-        <div className="flex items-center gap-3">
+      {/* Sessions */}
+      <div className="glass-card rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-4">
           <Beaker className="h-5 w-5 text-azure-light" />
-          <div>
-            <p className="text-sm font-medium">44 Learning Sessions</p>
-            <p className="text-xs text-muted">
-              Hands-on labs and guided exercises
-            </p>
-          </div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider">
+            Learning Sessions ({data.sessions?.length || 44})
+          </h2>
         </div>
-        <ExternalLink className="h-4 w-4 text-muted group-hover:text-azure-light transition-colors" />
-      </Link>
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {data.sessions?.map((session) => (
+            <a
+              key={session.session_number}
+              href={session.drive_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-elevated transition-colors group"
+            >
+              <span className="text-xs text-muted font-mono w-6 shrink-0">
+                {session.session_number}
+              </span>
+              <span className="text-sm flex-1 group-hover:text-azure-light transition-colors">
+                {session.title}
+              </span>
+              <ExternalLink className="h-3.5 w-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+          ))}
+          {!data.sessions && (
+            <p className="text-sm text-muted">Loading sessions...</p>
+          )}
+        </div>
+      </div>
 
       {/* Module Grid */}
       <div>

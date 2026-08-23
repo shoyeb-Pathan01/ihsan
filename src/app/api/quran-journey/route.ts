@@ -125,6 +125,13 @@ export async function GET() {
         totalLectures: TOTAL_LECTURES,
         avgMastery,
         highMasteryCount,
+        lectureData: lectures.map((l) => ({
+          id: l.lecture_number,
+          name: l.title,
+          mastery: l.mastery,
+          watched: l.watched,
+          duration_seconds: l.duration_seconds,
+        })),
       },
       reading: {
         currentStreak: readingStreak,

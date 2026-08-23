@@ -1,54 +1,67 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Clock, Target, Star, ChevronRight, Moon } from "lucide-react";
+import { BookOpen, Clock, Target, Star, ChevronRight, Moon, Check, X } from "lucide-react";
+
+interface LectureData {
+  id: number;
+  name: string;
+  mastery: number;
+  watched: boolean;
+  duration_seconds: number | null;
+}
 
 interface QuranJourneyData {
   arabic: {
-    lecturesWatched: number;
+    watchedCount: number;
     totalLectures: number;
-    averageMastery: number;
-    lectureData: Array<{
-      id: number;
-      name: string;
-      mastery: number;
-      status: string;
-    }>;
+    avgMastery: number;
+    highMasteryCount: number;
+    lectureData: LectureData[];
   };
   reading: {
-    streak: number;
+    currentStreak: number;
+    weekPages: number;
     totalPages: number;
-    thisWeekPages: number;
     monthlyConsistency: number;
   };
   memorization: {
     surahsCount: number;
     revisionSessions: number;
-    weakAreas: string[];
+    weakAreas: { id: string; surah: string; ayah_from: number; ayah_to: number; confidence: number }[];
   };
   tahajjud: {
-    streak: number;
+    currentStreak: number;
     monthlyConsistency: number;
   };
   pacing: {
+    lecturesStarted: number;
     lecturesStartedPerWeek: number;
-    estimatedCompletionDay: number;
-    revisionDaysLeft: number;
+    lecturesRemaining: number;
+    daysRemaining: number;
+    estimatedCompletionDay: number | null;
+    revisionDaysLeft: number | null;
   };
+}
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return "--:--";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export default function QuranJourneyPage() {
   const [data, setData] = useState<QuranJourneyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllLectures, setShowAllLectures] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await fetch("/api/quran-journey");
-        if (!response.ok) {
-          throw new Error("Failed to fetch Quran journey data");
-        }
+        if (!response.ok) throw new Error("Failed to fetch data");
         const result = await response.json();
         setData(result);
       } catch (err) {
@@ -57,226 +70,179 @@ export default function QuranJourneyPage() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-emerald-700 text-lg font-medium">Loading your journey...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-muted animate-pulse">Loading your journey...</div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 text-lg font-medium mb-4">Error loading data</p>
-          <p className="text-gray-600">{error || "No data available"}</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-danger">{error || "No data available"}</div>
       </div>
     );
   }
 
-  const arabicMasteryPercent = Math.round((data.arabic.lecturesWatched / data.arabic.totalLectures) * 100);
+  const lecturesToShow = showAllLectures
+    ? data.arabic.lectureData
+    : data.arabic.lectureData.slice(0, 15);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="text-center">
-            <p className="text-3xl mb-2 text-emerald-800">﷽</p>
-            <h1 className="text-3xl font-bold text-emerald-900 tracking-wide">QUR'AN JOURNEY</h1>
+      <div className="text-center space-y-1">
+        <p className="text-2xl">﷽</p>
+        <h1 className="text-lg font-bold tracking-wider text-arabic-light">
+          QUR&apos;AN JOURNEY
+        </h1>
+      </div>
+
+      {/* Why This Matters */}
+      <div className="glass-card rounded-xl p-4 border-l-4 border-arabic">
+        <p className="text-xs font-medium text-arabic-light uppercase tracking-wider mb-1">
+          Why This Matters
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Translation padhne wale se Qur&apos;an ko Arabic mein samajhne wale learner tak. The long-term destination is direct Qur&apos;anic comprehension through Arabic grammar, Qur&apos;anic vocabulary, and continuous practice.
+        </p>
+      </div>
+
+      {/* Overview Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="glass-card rounded-xl p-4 text-center">
+          <BookOpen className="h-5 w-5 text-arabic-light mx-auto mb-2" />
+          <p className="text-lg font-bold text-arabic-light">
+            {data.arabic.watchedCount}/{data.arabic.totalLectures}
+          </p>
+          <p className="text-[10px] text-muted">Lectures Watched</p>
+          <div className="mt-2 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+            <div
+              className="h-full bg-arabic rounded-full transition-all"
+              style={{ width: `${(data.arabic.watchedCount / data.arabic.totalLectures) * 100}%` }}
+            />
           </div>
+        </div>
+
+        <div className="glass-card rounded-xl p-4 text-center">
+          <Target className="h-5 w-5 text-reading mx-auto mb-2" />
+          <p className="text-lg font-bold">{data.reading.currentStreak}</p>
+          <p className="text-[10px] text-muted">Reading Streak</p>
+          <p className="text-[10px] text-muted mt-1">{data.reading.totalPages} pages total</p>
+        </div>
+
+        <div className="glass-card rounded-xl p-4 text-center">
+          <Star className="h-5 w-5 text-memorization mx-auto mb-2" />
+          <p className="text-lg font-bold">{data.memorization.surahsCount}</p>
+          <p className="text-[10px] text-muted">Surahs Memorized</p>
+          <p className="text-[10px] text-muted mt-1">{data.memorization.revisionSessions} revisions</p>
+        </div>
+
+        <div className="glass-card rounded-xl p-4 text-center">
+          <Moon className="h-5 w-5 text-tahajjud mx-auto mb-2" />
+          <p className="text-lg font-bold">{data.tahajjud.currentStreak}</p>
+          <p className="text-[10px] text-muted">Tahajjud Streak</p>
+          <p className="text-[10px] text-muted mt-1">
+            {Math.round(data.tahajjud.monthlyConsistency * 100)}% this month
+          </p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          {/* Lisān-ul-Qur'ān (Arabic) Card */}
-          <a
-            href="/quran-journey/arabic"
-            className="group block bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-emerald-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-emerald-100 rounded-xl">
-                  <BookOpen className="w-6 h-6 text-emerald-700" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-emerald-900">Lisān-ul-Qur'ān</h2>
-                  <p className="text-sm text-emerald-600">Arabic Language</p>
-                </div>
+      {/* Pacing Indicator */}
+      <div className="glass-card rounded-xl p-4">
+        <p className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
+          Pacing
+        </p>
+        <p className="text-sm text-muted-foreground">
+          At your current pace ({data.pacing.lecturesStartedPerWeek} lectures/week), you&apos;ll finish new lectures around{" "}
+          <span className="text-arabic-light font-medium">
+            Day {data.pacing.estimatedCompletionDay || "—"}
+          </span>
+          , leaving{" "}
+          <span className="text-arabic-light font-medium">
+            {data.pacing.revisionDaysLeft || "—"} days
+          </span>{" "}
+          for pure revision.
+        </p>
+        <div className="mt-3 flex items-center gap-4 text-xs text-muted">
+          <span>{data.pacing.lecturesStarted} started</span>
+          <span>{data.pacing.lecturesRemaining} remaining</span>
+          <span>{data.pacing.daysRemaining} days left</span>
+        </div>
+      </div>
+
+      {/* Lisān-ul-Qur'ān Lectures */}
+      <div className="glass-card rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider">
+            Lisān-ul-Qur&apos;ān — Level 1
+          </h2>
+          <span className="text-xs text-muted">
+            {data.arabic.avgMastery}% avg mastery
+          </span>
+        </div>
+
+        <div className="space-y-1.5 max-h-[500px] overflow-y-auto">
+          {lecturesToShow.map((lecture) => (
+            <div
+              key={lecture.id}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-elevated transition-colors"
+            >
+              <span className="text-xs text-muted font-mono w-6 shrink-0">
+                {lecture.id}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm truncate">{lecture.name}</p>
+                <p className="text-[10px] text-muted">
+                  {formatDuration(lecture.duration_seconds)}
+                </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:text-emerald-600 transition-colors" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Lectures Progress</span>
-                <span className="font-semibold text-emerald-800">
-                  {data.arabic.lecturesWatched}/{data.arabic.totalLectures}
+              <div className="flex items-center gap-2">
+                {lecture.watched ? (
+                  <Check className="h-3.5 w-3.5 text-arabic" />
+                ) : (
+                  <X className="h-3.5 w-3.5 text-muted/40" />
+                )}
+                <span className="text-xs text-muted w-8 text-right">
+                  {lecture.mastery}%
                 </span>
               </div>
-              <div className="w-full bg-emerald-100 rounded-full h-2">
-                <div
-                  className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${arabicMasteryPercent}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Average Mastery</span>
-                <span className="font-semibold text-emerald-800">{data.arabic.averageMastery}%</span>
-              </div>
             </div>
-          </a>
-
-          {/* Qur'an Reading Card */}
-          <a
-            href="/quran-journey/reading"
-            className="group block bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <Clock className="w-6 h-6 text-green-700" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-green-900">Qur'an Reading</h2>
-                  <p className="text-sm text-green-600">Daily Recitation</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-green-400 group-hover:text-green-600 transition-colors" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Current Streak</span>
-                <span className="font-semibold text-green-800">{data.reading.streak} days</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Pages Read</span>
-                <span className="font-semibold text-green-800">{data.reading.totalPages}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">This Week</span>
-                <span className="font-semibold text-green-800">{data.reading.thisWeekPages} pages</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Monthly Consistency</span>
-                <span className="font-semibold text-green-800">{data.reading.monthlyConsistency}%</span>
-              </div>
-            </div>
-          </a>
-
-          {/* Memorization (حفظ) Card */}
-          <a
-            href="/quran-journey/memorization"
-            className="group block bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-yellow-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-yellow-100 rounded-xl">
-                  <Star className="w-6 h-6 text-yellow-700" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-yellow-900">Memorization (حفظ)</h2>
-                  <p className="text-sm text-yellow-600">Hifz Journey</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-yellow-400 group-hover:text-yellow-600 transition-colors" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Surahs Memorized</span>
-                <span className="font-semibold text-yellow-800">{data.memorization.surahsCount}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Revision Sessions</span>
-                <span className="font-semibold text-yellow-800">{data.memorization.revisionSessions}</span>
-              </div>
-              {data.memorization.weakAreas.length > 0 && (
-                <div className="mt-2">
-                  <span className="text-sm text-gray-600">Areas to Review:</span>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {data.memorization.weakAreas.map((area, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full"
-                      >
-                        {area}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </a>
-
-          {/* Tahajjud Card */}
-          <a
-            href="/quran-journey/tahajjud"
-            className="group block bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <Moon className="w-6 h-6 text-purple-700" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-purple-900">Tahajjud</h2>
-                  <p className="text-sm text-purple-600">Night Prayer</p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-purple-400 group-hover:text-purple-600 transition-colors" />
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Current Streak</span>
-                <span className="font-semibold text-purple-800">{data.tahajjud.streak} days</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Monthly Consistency</span>
-                <span className="font-semibold text-purple-800">{data.tahajjud.monthlyConsistency}%</span>
-              </div>
-            </div>
-          </a>
+          ))}
         </div>
 
-        {/* Pacing Indicator */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-emerald-100 shadow-lg mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Target className="w-6 h-6 text-emerald-600" />
-            <h3 className="text-lg font-bold text-emerald-900">Arabic Learning Pace</h3>
-          </div>
-          <p className="text-gray-700 leading-relaxed">
-            At your current pace, you'll finish new lectures around{" "}
-            <span className="font-semibold text-emerald-700">Day {data.pacing.estimatedCompletionDay}</span>,
-            leaving{" "}
-            <span className="font-semibold text-emerald-700">{data.pacing.revisionDaysLeft} days</span>{" "}
-            for pure revision.
-          </p>
-          <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-            <Clock className="w-4 h-4" />
-            <span>Current pace: {data.pacing.lecturesStartedPerWeek} lectures/week</span>
-          </div>
-        </div>
-
-        {/* Why This Matters Section */}
-        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-8 border border-emerald-100 shadow-lg">
-          <h3 className="text-xl font-bold text-emerald-900 mb-4">Why This Matters</h3>
-          <p className="text-gray-700 leading-relaxed text-lg">
-            Translation padhne wale se Qur'an ko Arabic mein samajhne wale learner tak. The long-term
-            destination is direct Qur'anic comprehension through Arabic grammar, Qur'anic vocabulary,
-            and continuous practice.
-          </p>
-        </div>
+        {data.arabic.lectureData.length > 15 && (
+          <button
+            onClick={() => setShowAllLectures(!showAllLectures)}
+            className="mt-3 text-xs text-arabic-light hover:underline flex items-center gap-1"
+          >
+            {showAllLectures ? "Show less" : `Show all ${data.arabic.lectureData.length} lectures`}
+            <ChevronRight className="h-3 w-3" />
+          </button>
+        )}
       </div>
+
+      {/* Weak Areas */}
+      {data.memorization.weakAreas.length > 0 && (
+        <div className="glass-card rounded-xl p-4">
+          <p className="text-xs font-medium text-warning uppercase tracking-wider mb-2">
+            Memorization — Weak Areas
+          </p>
+          <div className="space-y-1">
+            {data.memorization.weakAreas.map((area) => (
+              <div key={area.id} className="flex items-center justify-between text-sm">
+                <span>{area.surah} ({area.ayah_from}-{area.ayah_to})</span>
+                <span className="text-xs text-muted">Confidence: {area.confidence}/5</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
