@@ -71,9 +71,11 @@ export async function GET() {
       where: { profile_id: "default", date: today },
     });
 
+    const todayDate = new Date(today + "T00:00:00.000Z");
+
     const revisionDue = await prisma.goalTopic.count({
       where: {
-        next_revision: { not: null, lte: today },
+        next_revision: { not: null, lte: todayDate },
       },
     });
 

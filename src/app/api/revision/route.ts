@@ -4,15 +4,16 @@ import { getToday, getDaysBetween } from "@/lib/utils";
 export async function GET() {
   try {
     const today = getToday();
+    const todayDate = new Date(today + "T00:00:00.000Z");
 
     const [topicRevisions, lectureRevisions] = await Promise.all([
       prisma.goalTopic.findMany({
-        where: { next_revision: { not: null, lte: today } },
+        where: { next_revision: { not: null, lte: todayDate } },
         include: { goal: true },
         orderBy: { next_revision: "asc" },
       }),
       prisma.lisanLecture.findMany({
-        where: { next_revision: { not: null, lte: today } },
+        where: { next_revision: { not: null, lte: todayDate } },
         orderBy: { next_revision: "asc" },
       }),
     ]);
