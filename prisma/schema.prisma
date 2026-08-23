@@ -1,0 +1,403 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Profile {
+  id                     String   @id @default(cuid())
+  name                   String   @default("Mr. Khan")
+  mission_start          String   @default("2026-08-23")
+  mission_end            String   @default("2026-10-23")
+  azure_weight           Float    @default(40)
+  arabic_weight          Float    @default(40)
+  reading_weight         Float    @default(7.5)
+  memorization_weight    Float    @default(5)
+  tahajjud_weight        Float    @default(5)
+  communication_weight   Float    @default(2.5)
+  daily_target           Int      @default(3)
+  theme                  String   @default("dark")
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  goals                  Goal[]
+  daily_tasks            DailyTask[]
+  daily_logs             DailyLog[]
+  streaks                Streak[]
+  xp_transactions        XPTransaction[]
+  badges                 UserBadge[]
+  weekly_reviews         WeeklyReview[]
+  baseline_snapshots     BaselineSnapshot[]
+  quran_reading          QuranReading[]
+  quran_memorization     QuranMemorization[]
+  tahajjud_logs          TahajjudLog[]
+  communication_logs     CommunicationLog[]
+}
+
+model Goal {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  name                   String
+  category               String   // "azure" | "arabic" | "reading" | "memorization" | "tahajjud" | "communication"
+  description            String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+  modules                GoalModule[]
+  topics                 GoalTopic[]
+}
+
+model GoalModule {
+  id                     String   @id @default(cuid())
+  goal_id                String
+  name                   String
+  description            String?
+  order_index            Int      @default(0)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  goal                   Goal     @relation(fields: [goal_id], references: [id])
+  topics                 GoalTopic[]
+}
+
+model GoalTopic {
+  id                     String   @id @default(cuid())
+  goal_id                String
+  module_id              String?
+  name                   String
+  description            String?
+  priority               String   @default("important") // "critical" | "important" | "supporting" | "bonus"
+  status                 String   @default("not_started") // "not_started" | "learning" | "practiced" | "revised" | "mastered"
+  completion_percentage  Float    @default(0)
+  mastery_percentage     Float    @default(0)
+  confidence             Int      @default(0) // 1-5
+  notes                  String?
+  lab_completed          Boolean  @default(false)
+  revision_count         Int      @default(0)
+  last_revised           DateTime?
+  next_revision          DateTime?
+  started_at             DateTime?
+  completed_at           DateTime?
+  xp_earned              Int      @default(0)
+  proof_of_work          String?  // JSON: { screenshot, architecture_link, github_link, interview_explanation }
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  goal                   Goal     @relation(fields: [goal_id], references: [id])
+  module                 GoalModule? @relation(fields: [module_id], references: [id])
+  topic_progress         TopicProgress[]
+  linked_sessions        TopicSessionLink[]
+}
+
+model TopicSessionLink {
+  id                     String   @id @default(cuid())
+  topic_id               String
+  session_id             String
+  created_at             DateTime @default(now())
+
+  topic                  GoalTopic @relation(fields: [topic_id], references: [id])
+}
+
+model TopicProgress {
+  id                     String   @id @default(cuid())
+  topic_id               String
+  date                   String   // YYYY-MM-DD
+  status                 String
+  completion_delta       Float    @default(0)
+  mastery_delta          Float    @default(0)
+  xp_earned              Int      @default(0)
+  notes                  String?
+  created_at             DateTime @default(now())
+
+  topic                  GoalTopic @relation(fields: [topic_id], references: [id])
+}
+
+model AzureSession {
+  id                     String   @id @default(cuid())
+  session_number         Int
+  title                  String
+  drive_link             String
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+}
+
+model LisanLecture {
+  id                     String   @id @default(cuid())
+  lecture_number         Int
+  title                  String
+  duration_seconds       Int?
+  watched                Boolean  @default(false)
+  book                   Boolean  @default(false)
+  notes                  Boolean  @default(false)
+  examples               Boolean  @default(false)
+  practice               Boolean  @default(false)
+  revision               Boolean  @default(false)
+  quiz                   Boolean  @default(false)
+  doubts_cleared         Boolean  @default(false)
+  lecture_progress       Float    @default(0)
+  understanding          Int      @default(0) // 1-5
+  confidence             Int      @default(0) // 1-5
+  mastery                Float    @default(0)
+  last_revised           DateTime?
+  next_revision          DateTime?
+  revision_count         Int      @default(0)
+  started_at             DateTime?
+  completed_at           DateTime?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+}
+
+model DailyTask {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  date                   String   // YYYY-MM-DD
+  title                  String
+  category               String
+  xp_value               Int      @default(5)
+  completed              Boolean  @default(false)
+  is_must_do             Boolean  @default(false)
+  topic_id               String?
+  lecture_id             String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model DailyLog {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  date                   String   // YYYY-MM-DD
+  completed              String?
+  learned                String?
+  difficult              String?
+  needs_revision         String?
+  quran_done             Boolean  @default(false)
+  tahajjud_done          Boolean  @default(false)
+  communication_done     Boolean  @default(false)
+  grateful               String?
+  tomorrow_priority      String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model Streak {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  category               String   // "overall" | "azure" | "arabic" | "reading" | "memorization" | "tahajjud" | "communication"
+  current_streak         Int      @default(0)
+  best_streak            Int      @default(0)
+  last_active_date       String?  // YYYY-MM-DD
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+
+  @@unique([profile_id, category])
+}
+
+model XPTransaction {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  amount                 Int
+  source                 String   // "azure_topic" | "arabic_topic" | "revision" | "lab" | "milestone" | "daily_bonus" | "weekly_bonus" | "communication"
+  description            String?
+  date                   String   // YYYY-MM-DD
+  created_at             DateTime @default(now())
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model UserBadge {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  badge_key              String
+  unlocked_at            DateTime @default(now())
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+
+  @@unique([profile_id, badge_key])
+}
+
+model QuranReading {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  date                   String   // YYYY-MM-DD
+  surah                  String
+  ayah_from              Int?
+  ayah_to                Int?
+  pages                  Int      @default(1)
+  juz                    Int?
+  duration_minutes       Int?
+  reflection             String?
+  completed              Boolean  @default(true)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model QuranMemorization {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  surah                  String
+  ayah_from              Int
+  ayah_to                Int
+  is_new                 Boolean  @default(true)
+  confidence             Int      @default(0) // 1-5
+  mistakes               Int      @default(0)
+  last_revised           DateTime?
+  next_revision          DateTime?
+  status                 String   @default("learning") // "learning" | "memorized" | "needs_revision" | "strong"
+  revision_count         Int      @default(0)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model TahajjudLog {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  date                   String   // YYYY-MM-DD
+  completed              Boolean  @default(false)
+  rakah_count            Int?
+  approximate_time       String?
+  dua_reflection         String?
+  notes                  String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+
+  @@unique([profile_id, date])
+}
+
+model CommunicationLog {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  date                   String   // YYYY-MM-DD
+  practice_type          String
+  duration_minutes       Int?
+  topic                  String?
+  confidence_score       Int?     // 1-5
+  clarity_score          Int?     // 1-5
+  fluency_score          Int?     // 1-5
+  notes                  String?
+  topic_id               String?  // linked azure topic
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model Reminder {
+  id                     String   @id @default(cuid())
+  text_paraphrase        String
+  source_type            String   // "Quran" | "Hadith" | "Quote"
+  reference              String
+  authenticity_note      String?
+  category               String
+  enabled                Boolean  @default(true)
+  is_custom              Boolean  @default(false)
+  profile_id             String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+}
+
+model WeeklyReview {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  week_start             String   // YYYY-MM-DD
+  week_end               String   // YYYY-MM-DD
+  azure_progress         Float?
+  arabic_progress        Float?
+  azure_mastery          Float?
+  arabic_mastery         Float?
+  tasks_completed        Int      @default(0)
+  tasks_missed           Int      @default(0)
+  xp_earned              Int      @default(0)
+  streak_current         Int?
+  weakest_area           String?
+  strongest_area         String?
+  focus_1                String?
+  focus_2                String?
+  focus_3                String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model Project {
+  id                     String   @id @default(cuid())
+  name                   String
+  objective              String?
+  architecture           String?
+  services_used          String?  // JSON array
+  status                 String   @default("not_started")
+  completion_pct         Float    @default(0)
+  screenshots            String?  // JSON array
+  notes                  String?
+  lessons_learned        String?
+  interview_explanation  String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  tasks                  ProjectTask[]
+}
+
+model ProjectTask {
+  id                     String   @id @default(cuid())
+  project_id             String
+  title                  String
+  completed              Boolean  @default(false)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  project                Project  @relation(fields: [project_id], references: [id])
+}
+
+model FocusSession {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  topic_id               String?
+  topic_name             String
+  duration_minutes       Int      @default(45)
+  started_at             DateTime @default(now())
+  ended_at               DateTime?
+  accomplished           String?
+  confidence_after       Int?     // 1-5
+  notes                  String?
+  xp_earned              Int      @default(0)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+}
+
+model BaselineSnapshot {
+  id                     String   @id @default(cuid())
+  profile_id             String
+  azure_knowledge        Int?     // 1-5
+  arabic_knowledge       Int?     // 1-5
+  communication_confidence Int?  // 1-5
+  notes                  String?
+  created_at             DateTime @default(now())
+
+  profile                Profile  @relation(fields: [profile_id], references: [id])
+}
+
+model Note {
+  id                     String   @id @default(cuid())
+  content                String
+  category               String?  // "azure" | "arabic" | "general"
+  topic_id               String?
+  lecture_id             String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+}
