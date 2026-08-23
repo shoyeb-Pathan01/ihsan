@@ -1,178 +1,73 @@
 import { prisma } from "@/lib/db";
-import {
-  getToday,
-  getDaysBetween,
-  getWeekStart,
-  getWeekEnd,
-  levelFromXP,
-} from "@/lib/utils";
+import { NextResponse } from "next/server";
+
+function daysBetween(a: string, b: string): number {
+  const da = new Date(a + "T00:00:00Z");
+  const db = new Date(b + "T00:00:00Z");
+  return Math.ceil((db.getTime() - da.getTime()) / 86400000);
+}
+
+function today(): string {
+  return new Date().toISOString().split("T")[0];
+}
 
 export async function GET() {
   try {
-    const today = getToday();
+    const profile = await prisma.profile.findFirst();
+    if (!profile) return NextResponse.json({ error: "No profile" }, { status: 400 });
 
-    const profile = await prisma.profile.findUnique({
-      where: { id: "default" },
-    });
+    const now = today();
+    const daysRemaining = Math.max(0, daysBetween(now, profile.mission_end));
 
-    if (!profile) {
-      return Response.json({ error: "Profile not found" }, { status: 404 });
-    }
+    const totalTopics = await prisma.goalTopic.count();
+    const completedTopics = await prisma.goalTopic.count({ where: { status: { not: "not_started" } } });
+    const masteredTopics = await prisma.goalTopic.count({ where: { status: "mastered" } });
 
-    const dayNumber = getDaysBetween(profile.mission_start, today) + 1;
-    const missionCompleted = today > profile.mission_end;
+    const totalSessions = await prisma.azureSession.count();
+    const completedSessions = await prisma.azureSession.count({ where: { status: "completed" } });
 
-    const [azureTopics, arabicTopics] = await Promise.all([
-      prisma.goalTopic.findMany({
-        where: { goal: { category: "azure" } },
-      }),
-      prisma.goalTopic.findMany({
-        where: { goal: { category: "arabic" } },
-      }),
-    ]);
+    const totalPracticals = await prisma.azurePractical.count();
+    const completedPracticals = await prisma.azurePractical.count({ where: { status: "completed" } });
 
-    const azureCompletion =
-      azureTopics.length > 0
-        ? Math.round(
-            azureTopics.reduce((s, t) => s + t.completion_percentage, 0) /
-              azureTopics.length,
-          )
-        : 0;
+    const totalLectures = await prisma.lisanLecture.count();
+    const watchedLectures = await prisma.lisanLecture.count({ where: { watched: true } });
+    const avgMastery = await prisma.lisanLecture.aggregate({ _avg: { mastery: true } });
 
-    const azureMastery =
-      azureTopics.length > 0
-        ? Math.round(
-            azureTopics.reduce((s, t) => s + t.mastery_percentage, 0) /
-              azureTopics.length,
-          )
-        : 0;
+    const readingPages = await prisma.quranReading.aggregate({ _sum: { pages: true }, where: { profile_id: profile.id } });
+    const readingDays = await prisma.quranReading.findMany({ where: { profile_id: profile.id }, select: { date: true }, distinct: ["date"] });
 
-    const arabicCompletion =
-      arabicTopics.length > 0
-        ? Math.round(
-            arabicTopics.reduce((s, t) => s + t.completion_percentage, 0) /
-              arabicTopics.length,
-          )
-        : 0;
+    const memorizationAyahs = await prisma.quranMemorization.aggregate({ _sum: { ayah_to: true }, _count: { id: true }, where: { profile_id: profile.id, is_new: true } });
 
-    const arabicMastery =
-      arabicTopics.length > 0
-        ? Math.round(
-            arabicTopics.reduce((s, t) => s + t.mastery_percentage, 0) /
-              arabicTopics.length,
-          )
-        : 0;
+    const tahajjudNights = await prisma.tahajjudLog.count({ where: { profile_id: profile.id, completed: true } });
 
-    const overallProgress = Math.round(
-      (azureCompletion * profile.azure_weight +
-        arabicCompletion * profile.arabic_weight) /
-        (profile.azure_weight + profile.arabic_weight),
-    );
+    const communicationSessions = await prisma.communicationSession.count({ where: { profile_id: profile.id } });
 
-    const xpResult = await prisma.xPTransaction.aggregate({
-      where: { profile_id: "default" },
-      _sum: { amount: true },
-    });
-    const totalXP = xpResult._sum.amount ?? 0;
-    const level = levelFromXP(totalXP);
+    const projects = await prisma.project.count();
+    const completedProjects = await prisma.project.count({ where: { status: "completed" } });
 
-    const streaks = await prisma.streak.findMany({
-      where: { profile_id: "default" },
-    });
+    const hasActivity = completedSessions > 0 || watchedLectures > 0 || (readingPages._sum.pages ?? 0) > 0 || tahajjudNights > 0 || communicationSessions > 0;
 
-    const badges = await prisma.userBadge.findMany({
-      where: { profile_id: "default" },
-      orderBy: { unlocked_at: "asc" },
-    });
+    const azureCompletion = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+    const azureMastery = totalTopics > 0 ? Math.round(masteredTopics / totalTopics * 100) : 0;
 
-    const thisWeekStart = getWeekStart();
-    const thisWeekEnd = getWeekEnd();
-    const lastWeekDate = new Date();
-    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
-    const lastWeekStart = getWeekStart(lastWeekDate);
-    const lastWeekEnd = getWeekEnd(lastWeekDate);
-
-    const [thisWeekTasks, lastWeekTasks] = await Promise.all([
-      prisma.dailyTask.findMany({
-        where: {
-          profile_id: "default",
-          completed: true,
-          date: { gte: thisWeekStart, lte: thisWeekEnd },
-        },
-        select: { date: true },
-      }),
-      prisma.dailyTask.findMany({
-        where: {
-          profile_id: "default",
-          completed: true,
-          date: { gte: lastWeekStart, lte: lastWeekEnd },
-        },
-        select: { date: true },
-      }),
-    ]);
-
-    const thisWeekDates = new Set(thisWeekTasks.map((t) => t.date));
-    const lastWeekDates = new Set(lastWeekTasks.map((t) => t.date));
-
-    const consistencyThisWeek = Number(
-      (thisWeekDates.size / 7).toFixed(2),
-    );
-    const consistencyLastWeek = Number(
-      (lastWeekDates.size / 7).toFixed(2),
-    );
-    const consistencyTrend = Number(
-      (consistencyThisWeek - consistencyLastWeek).toFixed(2),
-    );
-
-    const weeklyReview = await prisma.weeklyReview.findFirst({
-      where: { profile_id: "default" },
-      orderBy: { week_start: "desc" },
-    });
-
-    return Response.json({
-      dayNumber,
-      missionCompleted,
-      overallProgress,
-      azureCompletion,
-      azureMastery,
-      arabicCompletion,
-      arabicMastery,
-      totalXP,
-      level,
-      streaks: streaks.map((s) => ({
-        category: s.category,
-        current_streak: s.current_streak,
-        best_streak: s.best_streak,
-      })),
-      badges: badges.map((b) => ({
-        badge_key: b.badge_key,
-        unlocked_at: b.unlocked_at.toISOString(),
-      })),
-      consistencyThisWeek,
-      consistencyLastWeek,
-      consistencyTrend,
-      weeklyReview: weeklyReview
-        ? {
-            week_start: weeklyReview.week_start,
-            week_end: weeklyReview.week_end,
-            azure_progress: weeklyReview.azure_progress ?? 0,
-            arabic_progress: weeklyReview.arabic_progress ?? 0,
-            tasks_completed: weeklyReview.tasks_completed,
-            tasks_missed: weeklyReview.tasks_missed,
-            xp_earned: weeklyReview.xp_earned,
-            strongest_area: weeklyReview.strongest_area,
-            weakest_area: weeklyReview.weakest_area,
-            focus_1: weeklyReview.focus_1,
-            focus_2: weeklyReview.focus_2,
-            focus_3: weeklyReview.focus_3,
-          }
-        : null,
+    return NextResponse.json({
+      mission_end: profile.mission_end,
+      daysRemaining,
+      hasActivity,
+      career: {
+        azure: { completion: azureCompletion, mastery: azureMastery, topicsCompleted: completedTopics, totalTopics, sessionsCompleted: completedSessions },
+        communication: { totalSessions: communicationSessions },
+        projects: { total: projects, completed: completedProjects },
+      },
+      deen: {
+        arabic: { watched: watchedLectures, total: totalLectures, mastery: Math.round(avgMastery._avg.mastery ?? 0) },
+        reading: { pages: readingPages._sum.pages ?? 0, days: readingDays.length },
+        memorization: { ayahs: memorizationAyahs._sum.ayah_to ?? 0, sessions: memorizationAyahs._count },
+        tahajjud: { nights: tahajjudNights },
+      },
     });
   } catch (error) {
     console.error("Progress API error:", error);
-    return Response.json(
-      { error: "Failed to fetch progress data" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to load" }, { status: 500 });
   }
 }

@@ -1,23 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { GlobalSearch } from "@/components/GlobalSearch";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "IHSAN — 60-Day Mission",
-  description: "Learn. Build. Worship. Improve. A personal mission-control system.",
+  title: "IHSAN",
+  description: "Learn. Build. Worship. Improve.",
 };
 
 export default function RootLayout({
@@ -26,15 +20,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full bg-background text-foreground antialiased">
         <div className="flex h-screen overflow-hidden">
           <Sidebar />
           <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
-            <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-              <div className="flex justify-end mb-4">
-                <GlobalSearch />
-              </div>
+            <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
               {children}
             </div>
           </main>

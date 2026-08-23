@@ -22,15 +22,13 @@ const prisma = createPrismaClient();
 async function main() {
   console.log("Seeding IHSAN database...");
 
-  // Create profile
-  const profile = await prisma.profile.upsert({
-    where: { id: "default" },
-    update: {},
-    create: {
+  // Create profile - start from zero
+  const profile = await prisma.profile.create({
+    data: {
       id: "default",
       name: "Mr. Khan",
       mission_start: "2026-08-23",
-      mission_end: "2026-10-23",
+      mission_end: "2027-01-01",
     },
   });
   console.log("Profile created");
@@ -42,21 +40,9 @@ async function main() {
   const arabicGoal = await prisma.goal.create({
     data: { profile_id: profile.id, name: "Qur'anic Arabic", category: "arabic", description: "Lisan-ul-Quran Level 1 - Direct Qur'anic comprehension" },
   });
-  const readingGoal = await prisma.goal.create({
-    data: { profile_id: profile.id, name: "Qur'an Reading", category: "reading", description: "Daily Qur'an reading" },
-  });
-  const memorizationGoal = await prisma.goal.create({
-    data: { profile_id: profile.id, name: "Qur'an Memorization", category: "memorization", description: "Memorize selected surahs and ayat" },
-  });
-  const tahajjudGoal = await prisma.goal.create({
-    data: { profile_id: profile.id, name: "Tahajjud", category: "tahajjud", description: "Consistent night prayer" },
-  });
-  const communicationGoal = await prisma.goal.create({
-    data: { profile_id: profile.id, name: "Communication Practice", category: "communication", description: "Professional and technical communication" },
-  });
   console.log("Goals created");
 
-  // Create Azure modules and topics
+  // Create Azure modules and topics - all not started
   for (const mod of AZURE_MODULES) {
     const module = await prisma.goalModule.create({
       data: {
@@ -83,40 +69,55 @@ async function main() {
   }
   console.log("Azure modules and topics created");
 
-  // Create Azure sessions
+  // Create Azure sessions - all not started
   for (const session of AZURE_SESSIONS) {
     await prisma.azureSession.create({
       data: {
         session_number: session.session_number,
         title: session.title,
         drive_link: session.drive_link,
+        status: "not_started",
       },
     });
   }
   console.log("Azure sessions created");
 
-  // Create Arabic lectures
-  for (const lecture of LISAN_LECTURES) {
-    const isWatched = lecture.lecture_number <= 15;
-    const startedAt = isWatched ? new Date("2026-08-23") : null;
+  // Create Azure practicals
+  const practicals = [
+    { practical_number: 1, title: "Create a Resource Group", description: "Practice creating and managing Azure Resource Groups", tasks: JSON.stringify(["Create Resource Group", "Add tags", "Apply RBAC", "Verify access"]) },
+    { practical_number: 2, title: "Build VNet + Subnets", description: "Design and implement virtual networks with subnets", tasks: JSON.stringify(["Create VNet", "Add subnets", "Configure NSG rules", "Test connectivity"]) },
+    { practical_number: 3, title: "Deploy Secure VM", description: "Deploy VMs with NSG, Bastion, and private access", tasks: JSON.stringify(["Create VM", "Configure NSG", "Setup Bastion", "Test private access"]) },
+    { practical_number: 4, title: "Storage + Key Vault", description: "Configure storage accounts with private endpoints and Key Vault", tasks: JSON.stringify(["Create Storage Account", "Add Private Endpoint", "Setup Key Vault", "Configure Managed Identity"]) },
+  ];
 
+  for (const practical of practicals) {
+    await prisma.azurePractical.create({
+      data: {
+        practical_number: practical.practical_number,
+        title: practical.title,
+        description: practical.description,
+        tasks: practical.tasks,
+        status: "not_started",
+      },
+    });
+  }
+  console.log("Azure practicals created");
+
+  // Create Arabic lectures - all not watched
+  for (const lecture of LISAN_LECTURES) {
     await prisma.lisanLecture.create({
       data: {
         lecture_number: lecture.lecture_number,
         title: lecture.title,
         duration_seconds: lecture.duration_seconds,
-        watched: isWatched,
-        lecture_progress: isWatched ? 25 : 0,
-        understanding: 0,
-        confidence: 0,
+        watched: false,
         mastery: 0,
-        started_at: startedAt,
       },
     });
   }
-  console.log("Arabic lectures created (1-15 watched)");
+  console.log("Arabic lectures created (all not watched)");
 
-  // Create Lisan-ul-Quran as an Arabic goal topic entry for tracking
+  // Create Arabic goal module and topics
   const lisanModule = await prisma.goalModule.create({
     data: {
       goal_id: arabicGoal.id,
@@ -126,14 +127,13 @@ async function main() {
   });
 
   for (const lecture of LISAN_LECTURES) {
-    const isWatched = lecture.lecture_number <= 15;
     await prisma.goalTopic.create({
       data: {
         goal_id: arabicGoal.id,
         module_id: lisanModule.id,
         name: `Lecture ${lecture.lecture_number}: ${lecture.title}`,
-        status: isWatched ? "learning" : "not_started",
-        completion_percentage: isWatched ? 25 : 0,
+        status: "not_started",
+        completion_percentage: 0,
         mastery_percentage: 0,
       },
     });
@@ -144,10 +144,9 @@ async function main() {
   for (const reminder of SEED_REMINDERS) {
     await prisma.reminder.create({
       data: {
-        text_paraphrase: reminder.text_paraphrase,
+        text: reminder.text_paraphrase,
         source_type: reminder.source_type,
         reference: reminder.reference,
-        authenticity_note: reminder.authenticity_note,
         category: reminder.category,
         enabled: true,
       },
@@ -165,26 +164,12 @@ async function main() {
 
   for (const project of projects) {
     await prisma.project.create({
-      data: { name: project.name, objective: project.objective },
+      data: { name: project.name, objective: project.objective, status: "not_started" },
     });
   }
   console.log("Projects seeded");
 
-  // Create streaks
-  const streakCategories = ["overall", "azure", "arabic", "reading", "memorization", "tahajjud", "communication"];
-  for (const cat of streakCategories) {
-    await prisma.streak.create({
-      data: {
-        profile_id: profile.id,
-        category: cat,
-        current_streak: 0,
-        best_streak: 0,
-      },
-    });
-  }
-  console.log("Streaks initialized");
-
-  console.log("\nSeeding complete!");
+  console.log("\nSeeding complete! All progress starts from zero.");
 }
 
 main()

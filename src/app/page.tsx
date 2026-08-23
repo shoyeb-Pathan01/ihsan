@@ -1,104 +1,53 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProgressRing } from "@/components/ProgressRing";
-import { ProgressBar } from "@/components/ProgressBar";
-import { StatCard } from "@/components/StatCard";
-import { StreakCard } from "@/components/StreakCard";
-import { XPCard } from "@/components/XPCard";
-import { DailyTask } from "@/components/DailyTask";
-import { MissionIntelligence } from "@/components/MissionIntelligence";
-import { ReminderCard } from "@/components/ReminderCard";
-import { JourneyTimeline } from "@/components/JourneyTimeline";
-import { ConsistencyChart } from "@/components/ConsistencyChart";
-import { getGreeting } from "@/lib/utils";
-import {
-  Flame,
-  Target,
-  BookOpen,
-  Clock,
-  Trophy,
-  ChevronRight,
-  RefreshCw,
-  Cloud,
-} from "lucide-react";
 import Link from "next/link";
+import { Calendar, Briefcase, Building2, ArrowRight, Sun, Moon } from "lucide-react";
 
-interface DashboardData {
-  dayNumber: number;
-  daysRemaining: number;
-  missionCompleted: boolean;
-  profile: { name: string; mission_start: string; mission_end: string };
-  azureProgress: number;
-  arabicProgress: number;
-  overallProgress: number;
-  streaks: { category: string; current_streak: number; best_streak: number }[];
-  totalXP: number;
-  level: { level: number; name: string; current: number; next: number };
-  todayTasks: {
-    id: string;
-    title: string;
-    category: string;
-    xp_value: number;
-    completed: boolean;
-    is_must_do: boolean;
-  }[];
-  revisionDue: number;
-  reminder: {
-    text_paraphrase: string;
-    source_type: string;
-    reference: string;
-    category: string;
-  } | null;
-  readingStreak: number;
-  tahajjudStreak: number;
-  communicationSessions: number;
-  memorizationCount: number;
-  consistencyThisWeek: number;
-  consistencyLastWeek: number;
-  consistencyTrend: number;
-  strongest: { name: string; value: string };
-  needsAttention: { name: string; value: string };
-  nextMilestone: { name: string; remaining: number };
+interface Profile {
+  name: string;
+  mission_start: string;
+  mission_end: string;
+  baseline_azure: number | null;
+  baseline_arabic: number | null;
+  baseline_comm: number | null;
 }
 
-export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+interface HomeData {
+  profile: Profile | null;
+  daysRemaining: number;
+  dayNumber: number;
+  hasActivity: boolean;
+  careerProgress: { azure: number; communication: number; projects: number };
+  deenProgress: { arabic: number; reading: number; memorization: number; tahajjud: number };
+  todayFocus: { item: string; type: string } | null;
+  reminder: { text: string; source_type: string; reference: string } | null;
+}
+
+function getTimeGreeting() {
+  const h = new Date().getHours();
+  if (h < 6) return { text: "Good night", icon: Moon };
+  if (h < 12) return { text: "Good morning", icon: Sun };
+  if (h < 17) return { text: "Good afternoon", icon: Sun };
+  if (h < 21) return { text: "Good evening", icon: Sun };
+  return { text: "Good night", icon: Moon };
+}
+
+export default function HomePage() {
+  const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((res) => res.json())
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
+    fetch("/api/home")
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-
-  const handleTaskToggle = async (taskId: string) => {
-    if (!data) return;
-    const newTasks = data.todayTasks.map((t) =>
-      t.id === taskId ? { ...t, completed: !t.completed } : t
-    );
-    setData({ ...data, todayTasks: newTasks });
-
-    try {
-      await fetch("/api/tasks/toggle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId }),
-      });
-    } catch {
-      // Revert on error
-      setData({ ...data, todayTasks: data.todayTasks });
-    }
-  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-muted animate-pulse">Loading mission data...</div>
+        <p className="text-muted text-sm">Loading...</p>
       </div>
     );
   }
@@ -106,244 +55,205 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-muted">Failed to load dashboard data.</div>
+        <p className="text-muted text-sm">Failed to load.</p>
       </div>
     );
   }
 
-  const overallStreak = data.streaks.find((s) => s.category === "overall");
-  const mustDoTasks = data.todayTasks.filter((t) => t.is_must_do);
-  const optionalTasks = data.todayTasks.filter((t) => !t.is_must_do);
+  const { profile, daysRemaining, dayNumber, hasActivity, careerProgress, deenProgress, todayFocus, reminder } = data;
+  const greeting = getTimeGreeting();
+  const GreetingIcon = greeting.icon;
+
+  const formatDate = (d: string) => {
+    return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="text-center space-y-1">
-        <h1 className="text-xs font-bold tracking-[0.3em] text-azure-light uppercase">
-          IHSAN
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-muted">
+          <GreetingIcon className="h-4 w-4" />
+          <span className="text-xs uppercase tracking-wider">{greeting.text}</span>
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {profile?.name || "Welcome"}
         </h1>
-        <p className="text-[10px] text-muted tracking-widest">60-DAY MISSION</p>
       </div>
 
-      {/* Day Counter */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-3xl font-bold tracking-tight">
-            DAY <span className="text-azure-light">{data.dayNumber}</span>
-            <span className="text-muted text-lg"> / 60</span>
+      {/* Target */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted uppercase tracking-wider mb-1">Target</p>
+            <p className="text-lg font-medium">{formatDate(profile?.mission_end || "2027-01-01")}</p>
           </div>
-          <p className="text-sm text-muted mt-1">
-            {getGreeting()}, Mr. Khan
-          </p>
-        </div>
-        <StreakCard
-          streak={overallStreak?.current_streak || 0}
-          category="Day Streak"
-          bestStreak={overallStreak?.best_streak || 0}
-        />
-      </div>
-
-      {/* Mission Completed Banner */}
-      {data.missionCompleted && (
-        <div className="rounded-xl border border-arabic/30 bg-arabic-surface p-6 text-center">
-          <p className="text-lg font-semibold text-arabic-light">MISSION COMPLETED</p>
-          <p className="text-sm text-muted mt-1">
-            Your 60-day sprint is complete. View your transformation report.
-          </p>
-        </div>
-      )}
-
-      {/* Overall Progress */}
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-muted uppercase tracking-wider">
-            Overall Mission
-          </p>
-          <span className="text-2xl font-bold text-azure-light">
-            {Math.round(data.overallProgress)}%
-          </span>
-        </div>
-        <ProgressBar value={data.overallProgress} color="#3b82f6" />
-      </div>
-
-      {/* Core Mission Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link href="/azure" className="glass-card rounded-xl p-4 hover:border-azure/40 transition-colors group">
-          <div className="flex items-center gap-2 mb-3">
-            <Cloud className="h-4 w-4 text-azure-light" />
-            <p className="text-xs font-medium text-muted uppercase tracking-wider">Azure</p>
+          <div className="text-right">
+            <p className="text-2xl font-semibold text-azure-light">{daysRemaining}</p>
+            <p className="text-xs text-muted">days remaining</p>
           </div>
-          <ProgressRing
-            value={data.azureProgress}
-            size={64}
-            color="#3b82f6"
-          />
-          <p className="text-xs text-muted mt-2 group-hover:text-azure-light transition-colors">
-            View Modules <ChevronRight className="inline h-3 w-3" />
-          </p>
-        </Link>
-
-        <Link href="/quran-journey" className="glass-card rounded-xl p-4 hover:border-arabic/40 transition-colors group">
-          <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="h-4 w-4 text-arabic-light" />
-            <p className="text-xs font-medium text-muted uppercase tracking-wider">Arabic</p>
-          </div>
-          <ProgressRing
-            value={data.arabicProgress}
-            size={64}
-            color="#10b981"
-          />
-          <p className="text-xs text-muted mt-2 group-hover:text-arabic-light transition-colors">
-            View Lectures <ChevronRight className="inline h-3 w-3" />
-          </p>
-        </Link>
-      </div>
-
-      {/* Supporting Consistency */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="glass-card rounded-xl p-3 text-center">
-          <BookOpen className="h-4 w-4 text-reading mx-auto mb-1" />
-          <p className="text-lg font-bold">{data.readingStreak}</p>
-          <p className="text-[10px] text-muted">Reading Streak</p>
-        </div>
-        <div className="glass-card rounded-xl p-3 text-center">
-          <Target className="h-4 w-4 text-memorization mx-auto mb-1" />
-          <p className="text-lg font-bold">{data.memorizationCount}</p>
-          <p className="text-[10px] text-muted">Memorization</p>
-        </div>
-        <div className="glass-card rounded-xl p-3 text-center">
-          <Clock className="h-4 w-4 text-tahajjud mx-auto mb-1" />
-          <p className="text-lg font-bold">{data.tahajjudStreak}</p>
-          <p className="text-[10px] text-muted">Tahajjud Streak</p>
-        </div>
-        <div className="glass-card rounded-xl p-3 text-center">
-          <Trophy className="h-4 w-4 text-communication mx-auto mb-1" />
-          <p className="text-lg font-bold">{data.communicationSessions}</p>
-          <p className="text-[10px] text-muted">Communication</p>
         </div>
       </div>
 
-      {/* Today's Mission */}
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider">
-            Today&apos;s Mission
-          </h2>
-          <Link
-            href="/daily-mission"
-            className="text-xs text-azure-light hover:underline flex items-center gap-1"
-          >
-            View All <ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-
-        {mustDoTasks.length > 0 && (
-          <div className="space-y-2 mb-3">
-            <p className="text-[10px] font-medium text-muted uppercase tracking-wider">
-              Must Do
+      {/* Welcome State */}
+      {!hasActivity && (
+        <div className="space-y-6">
+          <div className="text-center space-y-2 py-4">
+            <h2 className="text-lg font-semibold">YOUR JOURNEY STARTS HERE</h2>
+            <p className="text-sm text-muted max-w-md mx-auto">
+              A personal system for learning, building, worshipping and improving.
             </p>
-            {mustDoTasks.map((task) => (
-              <DailyTask
-                key={task.id}
-                id={task.id}
-                title={task.title}
-                category={task.category}
-                xpValue={task.xp_value}
-                completed={task.completed}
-                isMustDo={task.is_must_do}
-                onToggle={handleTaskToggle}
-              />
-            ))}
           </div>
-        )}
 
-        {optionalTasks.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[10px] font-medium text-muted uppercase tracking-wider">
-              Optional
-            </p>
-            {optionalTasks.map((task) => (
-              <DailyTask
-                key={task.id}
-                id={task.id}
-                title={task.title}
-                category={task.category}
-                xpValue={task.xp_value}
-                completed={task.completed}
-                isMustDo={task.is_must_do}
-                onToggle={handleTaskToggle}
-              />
-            ))}
-          </div>
-        )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="card p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <Briefcase className="h-5 w-5 text-azure-light" />
+                <h3 className="text-sm font-medium">Career</h3>
+              </div>
+              <p className="text-2xl font-semibold mb-1">0%</p>
+              <p className="text-xs text-muted mb-4">started</p>
+              <Link
+                href="/career"
+                className="flex items-center gap-2 text-xs text-azure-light hover:underline"
+              >
+                Explore career <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
 
-        {data.todayTasks.length === 0 && (
-          <p className="text-sm text-muted text-center py-4">
-            No tasks generated yet. Check back tomorrow.
-          </p>
-        )}
-      </div>
-
-      {/* Revision Queue */}
-      {data.revisionDue > 0 && (
-        <Link
-          href="/revision"
-          className="glass-card rounded-xl p-4 flex items-center justify-between hover:border-warning/40 transition-colors group"
-        >
-          <div className="flex items-center gap-3">
-            <RefreshCw className="h-5 w-5 text-warning" />
-            <div>
-              <p className="text-sm font-medium">
-                {data.revisionDue} topics due for revision
-              </p>
-              <p className="text-xs text-muted">
-                Keep your knowledge fresh
-              </p>
+            <div className="card p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <Building2 className="h-5 w-5 text-arabic-light" />
+                <h3 className="text-sm font-medium">Deen</h3>
+              </div>
+              <p className="text-2xl font-semibold mb-1">0%</p>
+              <p className="text-xs text-muted mb-4">started</p>
+              <Link
+                href="/deen"
+                className="flex items-center gap-2 text-xs text-arabic-light hover:underline"
+              >
+                Explore deen <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           </div>
-          <ChevronRight className="h-4 w-4 text-muted group-hover:text-warning transition-colors" />
-        </Link>
+        </div>
       )}
 
-      {/* Mission Intelligence */}
-      <MissionIntelligence
-        strongest={data.strongest}
-        needsAttention={data.needsAttention}
-        nextMilestone={data.nextMilestone}
-      />
+      {/* Today's Focus */}
+      <div className="card p-5">
+        <p className="text-xs text-muted uppercase tracking-wider mb-3">Today&apos;s Focus</p>
+        {todayFocus ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{todayFocus.item}</p>
+              <p className="text-xs text-muted mt-0.5 capitalize">{todayFocus.type}</p>
+            </div>
+            <Link
+              href={`/deen`}
+              className="text-xs text-azure-light hover:underline flex items-center gap-1"
+            >
+              Start <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted mb-3">Nothing scheduled yet.</p>
+            <Link
+              href="/career"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-azure-soft text-azure-light text-sm font-medium hover:bg-azure/20 transition-colors"
+            >
+              Plan today
+            </Link>
+          </div>
+        )}
+      </div>
 
-      {/* Journey Timeline */}
-      <JourneyTimeline
-        currentDay={data.dayNumber}
-        totalDays={60}
-        totalXP={data.totalXP}
-      />
+      {/* Career / Deen Overview */}
+      {hasActivity && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Briefcase className="h-4 w-4 text-azure-light" />
+              <h3 className="text-sm font-medium">Career</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Azure</span>
+                  <span>{careerProgress.azure}%</span>
+                </div>
+                <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                  <div className="h-full bg-azure rounded-full" style={{ width: `${careerProgress.azure}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Communication</span>
+                  <span>{careerProgress.communication} sessions</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Projects</span>
+                  <span>{careerProgress.projects} active</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Consistency */}
-      <ConsistencyChart
-        thisWeek={data.consistencyThisWeek}
-        lastWeek={data.consistencyLastWeek}
-        trend={data.consistencyTrend}
-      />
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="h-4 w-4 text-arabic-light" />
+              <h3 className="text-sm font-medium">Deen</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Arabic</span>
+                  <span>{deenProgress.arabic}%</span>
+                </div>
+                <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                  <div className="h-full bg-arabic rounded-full" style={{ width: `${deenProgress.arabic}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Reading</span>
+                  <span>{deenProgress.reading} pages</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Memorization</span>
+                  <span>{deenProgress.memorization} ayahs</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Tahajjud</span>
+                  <span>{deenProgress.tahajjud} nights</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reminder */}
-      {data.reminder && (
-        <ReminderCard
-          text={data.reminder.text_paraphrase}
-          source={data.reminder.source_type}
-          reference={data.reminder.reference}
-          category={data.reminder.category}
-        />
+      {reminder && (
+        <div className="card p-5 border-l-4 border-arabic/40">
+          <p className="text-sm leading-relaxed text-muted-foreground mb-2">
+            &ldquo;{reminder.text}&rdquo;
+          </p>
+          <p className="text-xs text-muted">
+            {reminder.source_type} — {reminder.reference}
+          </p>
+        </div>
       )}
-
-      {/* XP Card */}
-      <XPCard
-        xp={data.totalXP}
-        level={data.level.level}
-        levelName={data.level.name}
-        currentXP={data.level.current}
-        nextLevelXP={data.level.next}
-      />
     </div>
   );
 }
