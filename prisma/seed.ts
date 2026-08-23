@@ -1,11 +1,23 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { AZURE_MODULES, AZURE_SESSIONS, TOPIC_PRIORITIES } from "../src/lib/data/azure-modules";
 import { LISAN_LECTURES } from "../src/lib/data/arabic-lectures";
 import { SEED_REMINDERS } from "../src/lib/data/reminders";
 
-const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
-const prisma = new PrismaClient({ adapter });
+function createPrismaClient() {
+  if (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) {
+    const adapter = new PrismaLibSql({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+    return new PrismaClient({ adapter });
+  }
+  const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
+  return new PrismaClient({ adapter });
+}
+
+const prisma = createPrismaClient();
 
 async function main() {
   console.log("Seeding IHSAN database...");
