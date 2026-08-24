@@ -65,7 +65,7 @@ export const SEED_REMINDERS = [
     source_type: "Hadith",
     reference: "Sahih Muslim 8 (Hadith of Jibril)",
     authenticity_note: "Sahih",
-    category: "ihsan",
+    category: "iqra",
     pool: "steadfastness",
   },
   {

@@ -20,7 +20,7 @@ function createPrismaClient() {
 const prisma = createPrismaClient();
 
 async function main() {
-  console.log("Seeding IHSAN database...");
+  console.log("Seeding MIZAN database...");
 
   // Create profile - start from zero
   const profile = await prisma.profile.create({

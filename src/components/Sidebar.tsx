@@ -19,7 +19,7 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-[245px] bg-[#111827] text-white px-[14px] py-[22px] sticky top-0 h-screen">
       <div className="font-extrabold text-lg px-3 pb-6">
-        IHSAN <span className="text-[#a78bfa]">OS</span>
+        IQRA <span className="text-[#a78bfa]">OS</span>
       </div>
 
       <nav className="grid gap-1.5">

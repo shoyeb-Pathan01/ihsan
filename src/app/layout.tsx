@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "IHSAN",
+  title: "IQRA",
   description: "Learn. Build. Worship. Improve.",
   icons: {
     icon: [

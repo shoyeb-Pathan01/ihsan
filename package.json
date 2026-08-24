@@ -1,8 +1,8 @@
 {
-  "name": "ihsan",
+  "name": "iqra",
   "version": "1.0.0",
   "private": true,
-  "description": "IHSAN — 60-Day Mission. Learn. Build. Worship. Improve.",
+  "description": "IQRA — 60-Day Mission. Learn. Build. Worship. Improve.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

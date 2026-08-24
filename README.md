@@ -1,4 +1,4 @@
-# IHSAN — 60-Day Mission
+# IQRA — 60-Day Mission
 
 > Learn. Build. Worship. Improve.
 
@@ -8,7 +8,7 @@ A personal mission-control system for a young Muslim professional pursuing two m
 
 **Ihsān (احسان)** — doing something with excellence, as if you can see the result before you see it.
 
-This application is not a generic habit tracker. It is a deeply personal command center built to make consistency and steadfastness (istiqāmah) feel real.
+This application is not a generic habit tracker. It is a deeply personal command center built to make consistency and steadfastness (istiqāmah) feel real. Named after the concept of Ihsān — striving for excellence in all acts of worship and work.
 
 ### Core Principles
 
@@ -39,8 +39,8 @@ This application is not a generic habit tracker. It is a deeply personal command
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/ihsan.git
-cd ihsan
+git clone https://github.com/your-username/iqra.git
+cd iqra
 
 # Install dependencies
 npm install

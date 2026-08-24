@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * IHSAN Setup Script
+ * MIZAN Setup Script
  * 
  * Usage:
  *   npm run setup          — Full setup (push schema + seed)
@@ -22,7 +22,7 @@ function run(cmd: string) {
 
 async function main() {
   console.log("╔══════════════════════════════════════╗");
-  console.log("║      IHSAN — Setup Script            ║");
+  console.log("║      MIZAN — Setup Script            ║");
   console.log("╚══════════════════════════════════════╝");
 
   const hasTurso = process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN;
@@ -39,9 +39,9 @@ async function main() {
       console.log("\nTo setup Turso:");
       console.log("1. Install Turso CLI: curl -sSfL https://get.tur.so/install.sh | bash");
       console.log("2. Login: turso auth login");
-      console.log("3. Create database: turso db create ihsan");
-      console.log("4. Get URL: turso db show ihsan --url");
-      console.log("5. Get token: turso db tokens create ihsan");
+      console.log("3. Create database: turso db create mizan");
+      console.log("4. Get URL: turso db show mizan --url");
+      console.log("5. Get token: turso db tokens create mizan");
       console.log("6. Add to .env.local:");
       console.log("   TURSO_DATABASE_URL=<url>");
       console.log("   TURSO_AUTH_TOKEN=<token>");
