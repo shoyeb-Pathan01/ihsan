@@ -1,17 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Cloud, ArrowLeft, Check, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { ExternalLink, Check } from "lucide-react";
 
 type Tab = "overview" | "sessions" | "practical" | "topics";
 
 interface AzureData {
-  overview: {
-    totalTopics: number; completedTopics: number; masteredTopics: number;
-    totalSessions: number; completedSessions: number;
-    totalPracticals: number; completedPracticals: number;
-  };
+  overview: { totalTopics: number; completedTopics: number; masteredTopics: number; totalSessions: number; completedSessions: number; totalPracticals: number; completedPracticals: number };
   sessions: { id: string; session_number: number; title: string; drive_link: string; status: string }[];
   practicals: { id: string; practical_number: number; title: string; description: string; tasks: string; status: string }[];
   modules: { id: string; name: string; topics: { id: string; name: string; priority: string; status: string; completion_percentage: number; mastery_percentage: number }[] }[];
@@ -38,9 +34,7 @@ export default function AzurePage() {
     });
     setData({
       ...data,
-      sessions: data.sessions.map((s) =>
-        s.id === sessionId ? { ...s, status: "completed" } : s
-      ),
+      sessions: data.sessions.map((s) => s.id === sessionId ? { ...s, status: "completed" } : s),
       overview: { ...data.overview, completedSessions: data.overview.completedSessions + 1 },
     });
   };
@@ -62,19 +56,11 @@ export default function AzurePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted text-sm">Loading...</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Loading...</p></div>;
   }
 
   if (!data) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted text-sm">Failed to load.</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Failed to load.</p></div>;
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -85,30 +71,17 @@ export default function AzurePage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
+    <div className="animate-fade-in space-y-6">
       <div>
-        <Link href="/career" className="flex items-center gap-1 text-xs text-muted hover:text-foreground mb-3">
-          <ArrowLeft className="h-3 w-3" /> Career
-        </Link>
-        <div className="flex items-center gap-2">
-          <Cloud className="h-5 w-5 text-azure-light" />
-          <h1 className="text-2xl font-semibold tracking-tight">AZURE</h1>
-        </div>
+        <div className="eyebrow">Career</div>
+        <h1 className="text-[30px] font-bold mt-1 mb-1">Azure</h1>
+        <p className="text-[#6b7280] m-0">Azure Administration → Microsoft Cloud → Cloud Security.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="tabs">
         {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t.key
-                ? "border-azure-light text-azure-light"
-                : "border-transparent text-muted hover:text-foreground"
-            }`}
-          >
+          <button key={t.key} onClick={() => setTab(t.key)} className={tab === t.key ? "active" : ""}>
             {t.label}
           </button>
         ))}
@@ -116,95 +89,96 @@ export default function AzurePage() {
 
       {/* Overview Tab */}
       {tab === "overview" && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-semibold">{data.overview.completedTopics}/{data.overview.totalTopics}</p>
-            <p className="text-xs text-muted mt-1">Course Topics</p>
+        <div className="grid-stats">
+          <div className="card">
+            <div className="stat-label">Course Topics</div>
+            <div className="stat">{data.overview.completedTopics}/{data.overview.totalTopics}</div>
+            <div className="small">completed</div>
           </div>
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-semibold">{data.overview.completedSessions}/{data.overview.totalSessions}</p>
-            <p className="text-xs text-muted mt-1">Sessions</p>
+          <div className="card">
+            <div className="stat-label">Sessions</div>
+            <div className="stat">{data.overview.completedSessions}/{data.overview.totalSessions}</div>
+            <div className="small">completed</div>
           </div>
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-semibold">{data.overview.completedPracticals}/{data.overview.totalPracticals}</p>
-            <p className="text-xs text-muted mt-1">Practical</p>
+          <div className="card">
+            <div className="stat-label">Practical</div>
+            <div className="stat">{data.overview.completedPracticals}/{data.overview.totalPracticals}</div>
+            <div className="small">completed</div>
           </div>
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-semibold">{data.overview.masteredTopics}</p>
-            <p className="text-xs text-muted mt-1">Mastered</p>
-          </div>
-          <div className="card p-4 text-center">
-            <p className="text-2xl font-semibold">{data.overview.totalTopics - data.overview.completedTopics}</p>
-            <p className="text-xs text-muted mt-1">Remaining</p>
+          <div className="card">
+            <div className="stat-label">Mastered</div>
+            <div className="stat">{data.overview.masteredTopics}</div>
+            <div className="small">topics</div>
           </div>
         </div>
       )}
 
       {/* Sessions Tab */}
       {tab === "sessions" && (
-        <div className="space-y-2">
+        <div className="card">
           {data.sessions.length === 0 ? (
-            <div className="card p-8 text-center">
-              <p className="text-sm text-muted">No sessions found.</p>
-            </div>
+            <div className="empty">No sessions found.</div>
           ) : (
-            data.sessions.map((session) => (
-              <div key={session.id} className="card p-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted font-mono w-6">{session.session_number}</span>
-                  <span className="text-sm">{session.title}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {session.status === "completed" ? (
-                    <span className="flex items-center gap-1 text-xs text-arabic-light">
-                      <Check className="h-3 w-3" /> Done
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => markSessionComplete(session.id)}
-                      className="text-xs px-2 py-1 rounded bg-azure-soft text-azure-light hover:bg-azure/20 transition-colors"
-                    >
-                      Mark Complete
-                    </button>
-                  )}
-                  <a href={session.drive_link} target="_blank" rel="noopener noreferrer" className="text-muted hover:text-foreground">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-              </div>
-            ))
+            <table className="table">
+              <thead>
+                <tr><th>#</th><th>Session</th><th>Status</th><th>Link</th></tr>
+              </thead>
+              <tbody>
+                {data.sessions.map((s) => (
+                  <tr key={s.id}>
+                    <td className="font-mono text-[#6b7280]">{s.session_number}</td>
+                    <td className="font-medium">{s.title}</td>
+                    <td>
+                      {s.status === "completed" ? (
+                        <span className="inline-flex items-center gap-1 text-[12px] text-[#16a34a] font-medium">
+                          <Check className="h-3 w-3" /> Done
+                        </span>
+                      ) : (
+                        <button onClick={() => markSessionComplete(s.id)} className="text-[12px] px-2 py-1 rounded-lg bg-[#eef2ff] text-[#635bff] hover:bg-[#dde3ff] font-medium">
+                          Mark Complete
+                        </button>
+                      )}
+                    </td>
+                    <td>
+                      <a href={s.drive_link} target="_blank" rel="noopener noreferrer" className="text-[#6b7280] hover:text-[#635bff]">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       )}
 
       {/* Practical Tab */}
       {tab === "practical" && (
-        <div className="space-y-2">
+        <div className="grid gap-4">
           {data.practicals.length === 0 ? (
-            <div className="card p-8 text-center">
-              <p className="text-sm text-muted">No practicals found.</p>
-            </div>
+            <div className="card empty">No practicals found.</div>
           ) : (
             data.practicals.map((p) => {
               const tasks: string[] = JSON.parse(p.tasks || "[]");
               return (
-                <div key={p.id} className="card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted font-mono w-6">{p.practical_number}</span>
-                      <span className="text-sm font-medium">{p.title}</span>
+                <div key={p.id} className="card">
+                  <div className="goal-head mb-2">
+                    <div>
+                      <span className="text-[#6b7280] font-mono text-[12px] mr-2">{p.practical_number}</span>
+                      <span className="font-bold">{p.title}</span>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded ${p.status === "completed" ? "bg-arabic-soft text-arabic-light" : "bg-surface-elevated text-muted"}`}>
+                    <span className={`badge ${p.status === "completed" ? "bg-[#dcfce7] text-[#166534]" : ""}`}>
                       {p.status}
                     </span>
                   </div>
+                  {p.description && <p className="small mb-3">{p.description}</p>}
                   {tasks.length > 0 && (
-                    <div className="ml-9 mt-2 space-y-1">
+                    <div className="grid gap-2">
                       {tasks.map((task, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs text-muted">
-                          <div className="w-3 h-3 rounded border border-border shrink-0" />
-                          <span>{task}</span>
-                        </div>
+                        <label key={i} className="check">
+                          <input type="checkbox" />
+                          <span className="text-[13px]">{task}</span>
+                        </label>
                       ))}
                     </div>
                   )}
@@ -217,38 +191,38 @@ export default function AzurePage() {
 
       {/* Topics Tab */}
       {tab === "topics" && (
-        <div className="space-y-4">
+        <div className="grid gap-4">
           {data.modules.map((mod) => (
-            <div key={mod.id}>
-              <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">{mod.name}</h3>
-              <div className="space-y-1">
+            <div key={mod.id} className="card">
+              <h3 className="font-extrabold text-base mb-3">{mod.name}</h3>
+              <div className="grid gap-2">
                 {mod.topics.map((topic) => (
-                  <div key={topic.id} className="card p-3 flex items-center justify-between gap-3">
+                  <div key={topic.id} className="flex items-center justify-between gap-3 py-2 border-b border-[#e8eaf0] last:border-0">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{topic.name}</p>
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-muted">
-                        <span className="capitalize">{topic.priority}</span>
-                        <span className="capitalize">{topic.status.replace("_", " ")}</span>
+                      <p className="text-[13px] font-medium truncate">{topic.name}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-[11px] text-[#6b7280] capitalize">{topic.priority}</span>
+                        <span className="text-[11px] text-[#6b7280] capitalize">{topic.status.replace("_", " ")}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="shrink-0">
                       {topic.status === "not_started" && (
-                        <button onClick={() => markTopicStatus(topic.id, "learning")} className="text-[10px] px-2 py-1 rounded bg-azure-soft text-azure-light">
+                        <button onClick={() => markTopicStatus(topic.id, "learning")} className="text-[11px] px-2 py-1 rounded-lg bg-[#eef2ff] text-[#635bff] font-medium">
                           Start
                         </button>
                       )}
                       {topic.status === "learning" && (
-                        <button onClick={() => markTopicStatus(topic.id, "practiced")} className="text-[10px] px-2 py-1 rounded bg-azure-soft text-azure-light">
+                        <button onClick={() => markTopicStatus(topic.id, "practiced")} className="text-[11px] px-2 py-1 rounded-lg bg-[#eef2ff] text-[#635bff] font-medium">
                           Practiced
                         </button>
                       )}
                       {topic.status === "practiced" && (
-                        <button onClick={() => markTopicStatus(topic.id, "revised")} className="text-[10px] px-2 py-1 rounded bg-azure-soft text-azure-light">
+                        <button onClick={() => markTopicStatus(topic.id, "revised")} className="text-[11px] px-2 py-1 rounded-lg bg-[#eef2ff] text-[#635bff] font-medium">
                           Revised
                         </button>
                       )}
                       {topic.status === "revised" && (
-                        <button onClick={() => markTopicStatus(topic.id, "mastered")} className="text-[10px] px-2 py-1 rounded bg-arabic-soft text-arabic-light">
+                        <button onClick={() => markTopicStatus(topic.id, "mastered")} className="text-[11px] px-2 py-1 rounded-lg bg-[#dcfce7] text-[#166534] font-medium">
                           Mastered
                         </button>
                       )}

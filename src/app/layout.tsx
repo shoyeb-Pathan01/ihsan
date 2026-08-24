@@ -24,13 +24,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="min-h-full bg-background text-foreground antialiased">
-        <div className="flex h-screen overflow-hidden">
+      <body className="min-h-full antialiased" style={{ background: "#f6f7fb", color: "#172033" }}>
+        <div className="flex min-h-screen">
           <Sidebar />
-          <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
-            <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-              {children}
-            </div>
+          <main className="flex-1 p-7 max-w-[1500px] pb-20 lg:pb-7">
+            {children}
           </main>
           <MobileNav />
         </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Settings as SettingsIcon, Save, Star } from "lucide-react";
 
 interface ProfileSettings {
   name: string;
@@ -40,71 +39,63 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted text-sm">Loading...</p></div>;
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Loading...</p></div>;
   }
 
   if (!settings) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted text-sm">Failed to load.</p></div>;
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Failed to load.</p></div>;
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-muted">
-          <SettingsIcon className="h-4 w-4" />
-          <span className="text-xs uppercase tracking-wider">Settings</span>
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight">SETTINGS</h1>
+    <div className="animate-fade-in space-y-6">
+      <div>
+        <div className="eyebrow">Settings</div>
+        <h1 className="text-[30px] font-bold mt-1 mb-1">Settings</h1>
+        <p className="text-[#6b7280] m-0">Manage your profile and mission dates.</p>
       </div>
 
       {/* Profile */}
-      <div className="card p-5">
-        <p className="text-xs text-muted uppercase tracking-wider mb-3">Profile</p>
-        <div className="space-y-3">
-          <div>
-            <label className="text-[10px] text-muted uppercase tracking-wider block mb-1">Name</label>
-            <input type="text" value={settings.name} onChange={(e) => setSettings({ ...settings, name: e.target.value })}
-              className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-azure/50" />
-          </div>
+      <div className="card">
+        <div className="eyebrow mb-3">Profile</div>
+        <div>
+          <label>Name</label>
+          <input type="text" value={settings.name} onChange={(e) => setSettings({ ...settings, name: e.target.value })} />
         </div>
       </div>
 
       {/* Mission Dates */}
-      <div className="card p-5">
-        <p className="text-xs text-muted uppercase tracking-wider mb-3">Mission Dates</p>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="card">
+        <div className="eyebrow mb-3">Mission Dates</div>
+        <div className="grid-2">
           <div>
-            <label className="text-[10px] text-muted uppercase tracking-wider block mb-1">Start</label>
-            <input type="date" value={settings.mission_start} onChange={(e) => setSettings({ ...settings, mission_start: e.target.value })}
-              className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-azure/50" />
+            <label>Start</label>
+            <input type="date" value={settings.mission_start} onChange={(e) => setSettings({ ...settings, mission_start: e.target.value })} />
           </div>
           <div>
-            <label className="text-[10px] text-muted uppercase tracking-wider block mb-1">End</label>
-            <input type="date" value={settings.mission_end} onChange={(e) => setSettings({ ...settings, mission_end: e.target.value })}
-              className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-azure/50" />
+            <label>End</label>
+            <input type="date" value={settings.mission_end} onChange={(e) => setSettings({ ...settings, mission_end: e.target.value })} />
           </div>
         </div>
       </div>
 
       {/* Baseline */}
-      <div className="card p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Star className="h-4 w-4 text-muted" />
-          <p className="text-xs text-muted uppercase tracking-wider">Baseline Self-Rating (Optional)</p>
-        </div>
-        <div className="space-y-3">
+      <div className="card">
+        <div className="eyebrow mb-3">Baseline Self-Rating (Optional)</div>
+        <div className="grid gap-3">
           {[
             { key: "baseline_azure" as const, label: "Azure Knowledge" },
             { key: "baseline_arabic" as const, label: "Arabic Knowledge" },
             { key: "baseline_comm" as const, label: "Communication Confidence" },
           ].map(({ key, label }) => (
-            <div key={key} className="flex items-center justify-between">
-              <span className="text-sm">{label}</span>
-              <div className="flex gap-1">
+            <div key={key}>
+              <label>{label}</label>
+              <div className="flex gap-1 mt-1">
                 {[1, 2, 3, 4, 5].map((v) => (
                   <button key={v} onClick={() => setSettings({ ...settings, [key]: v })}
-                    className={`w-8 h-8 rounded-lg text-xs font-medium border transition-colors ${
-                      settings[key] === v ? "bg-azure/20 text-azure-light border-azure/30" : "text-muted border-border hover:border-border"
+                    className={`flex-1 py-2 rounded-lg text-[13px] font-medium border transition-colors ${
+                      settings[key] === v
+                        ? "bg-[#111827] text-white border-[#111827]"
+                        : "bg-white text-[#4b5563] border-[#dfe3ea] hover:border-[#635bff]"
                     }`}>
                     {v}
                   </button>
@@ -117,8 +108,8 @@ export default function SettingsPage() {
 
       {/* Save */}
       <button onClick={handleSave} disabled={saving}
-        className="w-full py-3 rounded-xl bg-azure/20 text-azure-light font-medium text-sm hover:bg-azure/30 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
-        {saved ? <><Save className="h-4 w-4" /> Saved</> : saving ? "Saving..." : <><Save className="h-4 w-4" /> Save Settings</>}
+        className="btn-primary w-full disabled:opacity-50">
+        {saved ? "Saved" : saving ? "Saving..." : "Save Settings"}
       </button>
     </div>
   );

@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, MessageSquare, Mic } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 interface Session {
   id: string; date: string; practice_type: string; duration_minutes: number | null;
@@ -76,77 +74,73 @@ export default function CommunicationPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted text-sm">Loading...</p></div>;
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Loading...</p></div>;
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <Link href="/career" className="flex items-center gap-1 text-xs text-muted hover:text-foreground mb-3">
-          <ArrowLeft className="h-3 w-3" /> Career
-        </Link>
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-communication" />
-          <h1 className="text-2xl font-semibold tracking-tight">COMMUNICATION</h1>
+    <div className="animate-fade-in space-y-6">
+      <div className="flex justify-between items-start gap-5">
+        <div>
+          <div className="eyebrow">Communication</div>
+          <h1 className="text-[30px] font-bold mt-1 mb-1">Communication Practice</h1>
+          <p className="text-[#6b7280] m-0">Small daily reps. Better clarity. Better confidence.</p>
         </div>
-        <p className="text-sm text-muted mt-1">Track your speaking and explanation practice.</p>
+        <button onClick={() => document.getElementById("log-form")?.scrollIntoView({ behavior: "smooth" })} className="btn-primary">
+          + Log practice
+        </button>
       </div>
 
       {/* Explain It */}
-      <div className="card p-5 border-l-4 border-communication/40">
-        <p className="text-xs text-muted uppercase tracking-wider mb-2">Explain It Challenge</p>
-        <p className="text-sm font-medium mb-3">{EXPLAIN_PROMPTS[promptIndex]}</p>
-        <button onClick={() => setPromptIndex((p) => (p + 1) % EXPLAIN_PROMPTS.length)} className="text-xs text-communication hover:underline">
+      <div className="card">
+        <div className="eyebrow mb-2">Explain It Challenge</div>
+        <p className="text-[15px] font-bold mb-3">{EXPLAIN_PROMPTS[promptIndex]}</p>
+        <button onClick={() => setPromptIndex((p) => (p + 1) % EXPLAIN_PROMPTS.length)} className="text-[13px] text-[#635bff] font-medium hover:underline">
           Next prompt →
         </button>
       </div>
 
       {/* Log Form */}
-      <div className="card p-5">
-        <h3 className="text-sm font-medium mb-4">Log Session</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+      <div id="log-form" className="card">
+        <h3 className="font-extrabold text-base mb-4">Log Practice</h3>
+        <form onSubmit={handleSubmit} className="form-group">
+          <div className="grid-2">
             <div>
-              <label className="block text-xs text-muted mb-1">Date</label>
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-communication/50" />
+              <label>Date</label>
+              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs text-muted mb-1">Type</label>
-              <select value={form.practiceType} onChange={(e) => setForm({ ...form, practiceType: e.target.value })}
-                className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-communication/50">
+              <label>Type</label>
+              <select value={form.practiceType} onChange={(e) => setForm({ ...form, practiceType: e.target.value })}>
                 {PRACTICE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid-2">
             <div>
-              <label className="block text-xs text-muted mb-1">Duration (min)</label>
-              <input type="number" min="1" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })}
-                placeholder="Optional" className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-communication/50 placeholder:text-muted/50" />
+              <label>Duration (min)</label>
+              <input type="number" min="1" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })} placeholder="Optional" />
             </div>
             <div>
-              <label className="block text-xs text-muted mb-1">Topic</label>
-              <input type="text" value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })}
-                placeholder="e.g. Azure RBAC" className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-communication/50 placeholder:text-muted/50" />
+              <label>Topic</label>
+              <input type="text" value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="e.g. Azure RBAC" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid-2">
             {[
               { key: "confidenceScore", label: "Confidence" },
               { key: "clarityScore", label: "Clarity" },
               { key: "fluencyScore", label: "Fluency" },
             ].map(({ key, label }) => (
               <div key={key}>
-                <label className="block text-xs text-muted mb-1">{label} (1-5)</label>
-                <div className="flex gap-1">
+                <label>{label} (1-5)</label>
+                <div className="flex gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((v) => (
                     <button key={v} type="button" onClick={() => setForm({ ...form, [key]: String(v) })}
-                      className={cn("flex-1 py-2 rounded-lg text-xs font-medium border transition-colors",
+                      className={`flex-1 py-2 rounded-lg text-[13px] font-medium border transition-colors ${
                         form[key as keyof typeof form] === String(v)
-                          ? "bg-communication/20 text-communication border-communication/40"
-                          : "bg-surface-elevated text-muted border-border"
-                      )}>
+                          ? "bg-[#111827] text-white border-[#111827]"
+                          : "bg-white text-[#4b5563] border-[#dfe3ea] hover:border-[#635bff]"
+                      }`}>
                       {v}
                     </button>
                   ))}
@@ -155,45 +149,39 @@ export default function CommunicationPage() {
             ))}
           </div>
           <div>
-            <label className="block text-xs text-muted mb-1">Notes</label>
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
-              placeholder="How did it go?" className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-communication/50 resize-none placeholder:text-muted/50" />
+            <label>Notes</label>
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="How did it go?" />
           </div>
-          <button type="submit" disabled={submitting}
-            className="w-full py-2.5 bg-communication/20 hover:bg-communication/30 text-communication text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            {submitting ? "Saving..." : <><Mic className="h-3.5 w-3.5" /> Log Session</>}
-          </button>
+          <div className="flex justify-end gap-2">
+            <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
+              {submitting ? "Saving..." : "Save"}
+            </button>
+          </div>
         </form>
       </div>
 
-      {/* Sessions */}
-      <div>
-        <p className="text-xs text-muted uppercase tracking-wider mb-3">Recent Sessions</p>
-        {sessions.length === 0 ? (
-          <div className="card p-8 text-center">
-            <MessageSquare className="w-8 h-8 text-muted mx-auto mb-2" />
-            <p className="text-sm text-muted">No sessions yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {sessions.map((s) => (
-              <div key={s.id} className="card p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-communication/15 text-communication">{s.practice_type}</span>
-                  <span className="text-[10px] text-muted">{s.date}</span>
-                </div>
-                {s.topic && <p className="text-sm font-medium">{s.topic}</p>}
-                <div className="flex items-center gap-3 mt-1 text-[10px] text-muted">
-                  {s.duration_minutes && <span>{s.duration_minutes}min</span>}
-                  {s.confidence_score && <span>Confidence: {s.confidence_score}/5</span>}
-                  {s.clarity_score && <span>Clarity: {s.clarity_score}/5</span>}
-                  {s.fluency_score && <span>Fluency: {s.fluency_score}/5</span>}
-                </div>
-                {s.notes && <p className="text-xs text-muted mt-1 line-clamp-1">{s.notes}</p>}
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Sessions Table */}
+      <div className="card">
+        <h2 className="font-extrabold text-base mb-4">Recent Sessions</h2>
+        <table className="table">
+          <thead>
+            <tr><th>Date</th><th>Skill</th><th>Practice</th><th>Self-score</th></tr>
+          </thead>
+          <tbody>
+            {sessions.length === 0 ? (
+              <tr><td colSpan={4} className="empty">No practice logged yet.</td></tr>
+            ) : (
+              sessions.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.date}</td>
+                  <td className="font-medium">{s.practice_type}</td>
+                  <td>{s.topic || "—"}</td>
+                  <td>{s.confidence_score}/5</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, FolderKanban } from "lucide-react";
 import Link from "next/link";
 
 interface Project {
@@ -21,44 +20,39 @@ export default function ProjectsPage() {
   }, []);
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted text-sm">Loading...</p></div>;
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Loading...</p></div>;
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="animate-fade-in space-y-6">
       <div>
-        <Link href="/career" className="flex items-center gap-1 text-xs text-muted hover:text-foreground mb-3">
-          <ArrowLeft className="h-3 w-3" /> Career
-        </Link>
-        <div className="flex items-center gap-2">
-          <FolderKanban className="h-5 w-5 text-memorization" />
-          <h1 className="text-2xl font-semibold tracking-tight">PROJECTS</h1>
-        </div>
+        <div className="eyebrow">Projects</div>
+        <h1 className="text-[30px] font-bold mt-1 mb-1">Projects</h1>
+        <p className="text-[#6b7280] m-0">Build real-world Azure projects for your portfolio.</p>
       </div>
 
       {projects.length === 0 ? (
-        <div className="card p-8 text-center">
-          <FolderKanban className="w-8 h-8 text-muted mx-auto mb-2" />
-          <p className="text-sm text-muted">No projects yet.</p>
-        </div>
+        <div className="card empty">No projects yet.</div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4">
           {projects.map((project) => (
-            <div key={project.id} className="card p-5">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium">{project.name}</h3>
-                <span className={`text-xs px-2 py-0.5 rounded ${project.status === "completed" ? "bg-arabic-soft text-arabic-light" : project.status === "in_progress" ? "bg-azure-soft text-azure-light" : "bg-surface-elevated text-muted"}`}>
+            <div key={project.id} className="card">
+              <div className="goal-head mb-2">
+                <div>
+                  <h2 className="font-extrabold text-base">{project.name}</h2>
+                  {project.objective && <p className="small mt-1">{project.objective}</p>}
+                </div>
+                <span className={`badge ${project.status === "completed" ? "bg-[#dcfce7] text-[#166534]" : project.status === "in_progress" ? "bg-[#eef2ff] text-[#4f46e5]" : ""}`}>
                   {project.status.replace("_", " ")}
                 </span>
               </div>
-              {project.objective && <p className="text-xs text-muted mb-3">{project.objective}</p>}
               {project.tasks.length > 0 && (
-                <div className="space-y-1 mt-3">
+                <div className="grid gap-2 mt-3">
                   {project.tasks.map((t) => (
-                    <div key={t.id} className="flex items-center gap-2 text-xs">
-                      <div className={`w-3 h-3 rounded border ${t.completed ? "bg-arabic border-arabic" : "border-border"}`} />
-                      <span className={t.completed ? "text-muted line-through" : ""}>{t.title}</span>
-                    </div>
+                    <label key={t.id} className="check">
+                      <input type="checkbox" checked={t.completed} readOnly />
+                      <span className={`text-[13px] ${t.completed ? "line-through text-[#6b7280]" : ""}`}>{t.title}</span>
+                    </label>
                   ))}
                 </div>
               )}

@@ -1,158 +1,116 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, Moon, Plus } from "lucide-react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 
-interface TahajjudLog {
-  id: string; date: string; completed: boolean; rakah_count: number | null;
-  time: string | null; reflection: string | null;
+interface TahajjudNight {
+  date: string; woke_up: boolean; prayed: boolean; notes: string | null;
 }
 
 export default function TahajjudPage() {
-  const [logs, setLogs] = useState<TahajjudLog[]>([]);
+  const [nights, setNights] = useState<TahajjudNight[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    date: new Date().toISOString().split("T")[0],
-    completed: true, rakah_count: "", time: "", reflection: "",
-  });
+  const [todayDate, setTodayDate] = useState(new Date().toISOString().split("T")[0]);
+  const [todayWokeUp, setTodayWokeUp] = useState(false);
+  const [todayPrayed, setTodayPrayed] = useState(false);
+  const [todayNotes, setTodayNotes] = useState("");
+  const [saved, setSaved] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await fetch("/api/deen/tahajjud");
-      const data = await res.json();
-      setLogs(data.logs || []);
-    } catch {} finally { setLoading(false); }
+  useEffect(() => {
+    fetch("/api/deen/tahajjud")
+      .then((r) => r.json())
+      .then((d) => { setNights(d.nights || []); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("/api/deen/tahajjud", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: form.date, completed: form.completed,
-          rakah_count: form.rakah_count ? parseInt(form.rakah_count) : null,
-          time: form.time || null, reflection: form.reflection || null,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLogs((prev) => [data.log, ...prev]);
-        setForm({ date: new Date().toISOString().split("T")[0], completed: true, rakah_count: "", time: "", reflection: "" });
-        setShowForm(false);
-      }
-    } catch {}
+  const save = async () => {
+    await fetch("/api/deen/tahajjud", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: todayDate, woke_up: todayWokeUp, prayed: todayPrayed, notes: todayNotes || null }),
+    });
+    setNights([{ date: todayDate, woke_up: todayWokeUp, prayed: todayPrayed, notes: todayNotes || null }, ...nights]);
+    setTodayWokeUp(false);
+    setTodayPrayed(false);
+    setTodayNotes("");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted text-sm">Loading...</p></div>;
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Loading...</p></div>;
   }
 
+  const prayedCount = nights.filter((n) => n.prayed).length;
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="animate-fade-in space-y-6">
       <div>
-        <Link href="/deen" className="flex items-center gap-1 text-xs text-muted hover:text-foreground mb-3">
-          <ArrowLeft className="h-3 w-3" /> Deen
-        </Link>
-        <div className="flex items-center gap-2">
-          <Moon className="h-5 w-5 text-tahajjud" />
-          <h1 className="text-2xl font-semibold tracking-tight">TAHAJJUD</h1>
-        </div>
-        <p className="text-sm text-muted mt-1">Track your night-prayer consistency.</p>
+        <div className="eyebrow">Qur&apos;an Journey</div>
+        <h1 className="text-[30px] font-bold mt-1 mb-1">Tahajjud</h1>
+        <p className="text-[#6b7280] m-0">A quiet night prayer tracker.</p>
       </div>
 
-      {logs.length === 0 && !showForm && (
-        <div className="card p-8 text-center">
-          <Moon className="w-8 h-8 text-muted mx-auto mb-2" />
-          <p className="text-sm text-muted mb-4">No records yet.</p>
-          <button onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-tahajjud/15 text-tahajjud text-sm font-medium hover:bg-tahajjud/25 transition-colors">
-            <Plus className="h-4 w-4" /> Record Tahajjud
+      <div className="card">
+        <div className="grid-2">
+          <div className="text-center p-4 bg-[#f6f7fb] rounded-xl">
+            <div className="text-2xl font-bold">{nights.length}</div>
+            <div className="text-[13px] text-[#6b7280]">Nights tracked</div>
+          </div>
+          <div className="text-center p-4 bg-[#f6f7fb] rounded-xl">
+            <div className="text-2xl font-bold">{prayedCount}</div>
+            <div className="text-[13px] text-[#6b7280]">Prayed</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="eyebrow mb-2">Log Night</div>
+        <div className="grid-2">
+          <div>
+            <label>Date</label>
+            <input type="date" value={todayDate} onChange={(e) => setTodayDate(e.target.value)} />
+          </div>
+          <div className="flex gap-2 items-end">
+            <button onClick={() => setTodayWokeUp(!todayWokeUp)} className={`flex-1 py-2 rounded-lg text-[13px] font-medium border transition-colors ${todayWokeUp ? "bg-[#111827] text-white border-[#111827]" : "bg-white text-[#4b5563] border-[#dfe3ea] hover:border-[#635bff]"}`}>
+              {todayWokeUp ? "✓ Woke up" : "Did not wake up"}
+            </button>
+            <button onClick={() => setTodayPrayed(!todayPrayed)} className={`flex-1 py-2 rounded-lg text-[13px] font-medium border transition-colors ${todayPrayed ? "bg-[#635bff] text-white border-[#635bff]" : "bg-white text-[#4b5563] border-[#dfe3ea] hover:border-[#635bff]"}`}>
+              {todayPrayed ? "✓ Prayed" : "Did not pray"}
+            </button>
+          </div>
+        </div>
+        <div className="mt-3">
+          <label>Notes</label>
+          <input type="text" value={todayNotes} onChange={(e) => setTodayNotes(e.target.value)} placeholder="Optional notes" />
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button onClick={save} className="btn-primary" disabled={saved}>
+            {saved ? "Saved!" : "Save"}
           </button>
         </div>
-      )}
+      </div>
 
-      {(logs.length > 0 || showForm) && (
-        <button onClick={() => setShowForm(!showForm)}
-          className="text-xs text-tahajjud hover:underline flex items-center gap-1">
-          <Plus className="h-3 w-3" /> {showForm ? "Cancel" : "Record Tahajjud"}
-        </button>
-      )}
-
-      {showForm && (
-        <div className="card p-5">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-muted mb-1">Date</label>
-                <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-tahajjud/50" />
-              </div>
-              <div>
-                <label className="block text-xs text-muted mb-1">Completed</label>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setForm({ ...form, completed: true })}
-                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${form.completed ? "bg-tahajjud/20 text-tahajjud border-tahajjud/40" : "bg-surface-elevated text-muted border-border"}`}>
-                    Yes
-                  </button>
-                  <button type="button" onClick={() => setForm({ ...form, completed: false })}
-                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${!form.completed ? "bg-tahajjud/20 text-tahajjud border-tahajjud/40" : "bg-surface-elevated text-muted border-border"}`}>
-                    No
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-muted mb-1">Rakah (optional)</label>
-                <input type="number" min="1" value={form.rakah_count} onChange={(e) => setForm({ ...form, rakah_count: e.target.value })}
-                  className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-tahajjud/50" />
-              </div>
-              <div>
-                <label className="block text-xs text-muted mb-1">Time (optional)</label>
-                <input type="text" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}
-                  placeholder="e.g. 3:30 AM" className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-tahajjud/50 placeholder:text-muted/50" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-muted mb-1">Reflection (optional)</label>
-              <textarea value={form.reflection} onChange={(e) => setForm({ ...form, reflection: e.target.value })} rows={2}
-                className="w-full bg-surface-elevated border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-tahajjud/50 resize-none placeholder:text-muted/50" />
-            </div>
-            <button type="submit" className="w-full py-2.5 bg-tahajjud/20 hover:bg-tahajjud/30 text-tahajjud text-sm font-medium rounded-lg transition-colors">
-              Save
-            </button>
-          </form>
-        </div>
-      )}
-
-      {logs.length > 0 && (
-        <div>
-          <p className="text-xs text-muted uppercase tracking-wider mb-3">Recent Records</p>
+      <div className="card">
+        <h3 className="font-extrabold text-base mb-3">History</h3>
+        {nights.length === 0 ? (
+          <p className="text-[13px] text-[#6b7280]">No records yet.</p>
+        ) : (
           <div className="space-y-2">
-            {logs.map((log) => (
-              <div key={log.id} className="card p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium">{log.date}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded ${log.completed ? "bg-tahajjud/20 text-tahajjud" : "bg-surface-elevated text-muted"}`}>
-                    {log.completed ? "Completed" : "Missed"}
-                  </span>
+            {nights.slice(0, 20).map((n, i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-[#f6f7fb] rounded-xl">
+                <div>
+                  <div className="text-[13px] font-medium">{n.date}</div>
+                  {n.notes && <div className="text-[12px] text-[#6b7280] mt-1">{n.notes}</div>}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted">
-                  {log.rakah_count && <span>{log.rakah_count} rakah</span>}
-                  {log.time && <span>{log.time}</span>}
+                <div className="flex gap-2">
+                  {n.woke_up && <span className="badge bg-[#eef2ff] text-[#4f46e5]">Woke up</span>}
+                  {n.prayed && <span className="badge bg-[#dcfce7] text-[#166534]">Prayed</span>}
                 </div>
-                {log.reflection && <p className="text-xs text-muted mt-1 line-clamp-1">{log.reflection}</p>}
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

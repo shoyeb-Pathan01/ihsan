@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Briefcase, Cloud, MessageSquare, FolderKanban, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 interface CareerData {
   azure: { completion: number; topicsCompleted: number; totalTopics: number; sessionsCompleted: number; totalSessions: number };
@@ -22,83 +22,60 @@ export default function CareerPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted text-sm">Loading...</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Loading...</p></div>;
   }
 
   if (!data) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted text-sm">Failed to load.</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Failed to load.</p></div>;
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-muted">
-          <Briefcase className="h-4 w-4" />
-          <span className="text-xs uppercase tracking-wider">Career</span>
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight">CAREER</h1>
+    <div className="animate-fade-in space-y-6">
+      {/* Top */}
+      <div>
+        <div className="eyebrow">Career Growth</div>
+        <h1 className="text-[30px] font-bold mt-1 mb-1">Career / Azure</h1>
+        <p className="text-[#6b7280] m-0">Azure Administration → Microsoft Cloud → Cloud Security.</p>
       </div>
 
       {/* Cards */}
-      <div className="space-y-4">
+      <div className="grid gap-4">
         {/* Azure */}
-        <Link href="/career/azure" className="card p-5 block hover:border-azure/40 transition-colors group">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <Cloud className="h-5 w-5 text-azure-light" />
-                <h2 className="text-base font-medium">Azure Administration</h2>
-              </div>
-              <p className="text-2xl font-semibold mb-1">{data.azure.completion}%</p>
-              <p className="text-xs text-muted">started</p>
-              <div className="flex items-center gap-4 mt-3 text-xs text-muted">
-                <span>{data.azure.topicsCompleted}/{data.azure.totalTopics} topics</span>
-                <span>{data.azure.sessionsCompleted}/{data.azure.totalSessions} sessions</span>
-              </div>
+        <Link href="/career/azure" className="card block hover:shadow-lg transition-shadow group">
+          <div className="goal-head">
+            <div>
+              <div className="eyebrow">Azure</div>
+              <h2 className="font-extrabold text-base mt-1">Azure Administration</h2>
+              <p className="small">{data.azure.topicsCompleted}/{data.azure.totalTopics} topics · {data.azure.sessionsCompleted}/{data.azure.totalSessions} sessions</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-muted group-hover:text-azure-light transition-colors mt-1" />
+            <span className="badge">{data.azure.completion}%</span>
+          </div>
+          <div className="progress mt-3">
+            <div className="bar" style={{ width: `${data.azure.completion}%` }}></div>
           </div>
         </Link>
 
         {/* Communication */}
-        <Link href="/career/communication" className="card p-5 block hover:border-communication/40 transition-colors group">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <MessageSquare className="h-5 w-5 text-communication" />
-                <h2 className="text-base font-medium">Communication</h2>
-              </div>
-              <p className="text-2xl font-semibold mb-1">{data.communication.totalSessions}</p>
-              <p className="text-xs text-muted">sessions</p>
+        <Link href="/career/communication" className="card block hover:shadow-lg transition-shadow group">
+          <div className="goal-head">
+            <div>
+              <div className="eyebrow">Communication</div>
+              <h2 className="font-extrabold text-base mt-1">Communication Practice</h2>
+              <p className="small">{data.communication.totalSessions} sessions logged</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-muted group-hover:text-communication transition-colors mt-1" />
+            <ArrowRight className="h-4 w-4 text-[#6b7280] group-hover:text-[#635bff] mt-1" />
           </div>
         </Link>
 
         {/* Projects */}
-        <Link href="/career/projects" className="card p-5 block hover:border-memorization/40 transition-colors group">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <FolderKanban className="h-5 w-5 text-memorization" />
-                <h2 className="text-base font-medium">Projects</h2>
-              </div>
-              <p className="text-2xl font-semibold mb-1">{data.projects.total}</p>
-              <p className="text-xs text-muted">total</p>
-              {data.projects.inProgress > 0 && (
-                <p className="text-xs text-muted mt-1">{data.projects.inProgress} in progress</p>
-              )}
+        <Link href="/career/projects" className="card block hover:shadow-lg transition-shadow group">
+          <div className="goal-head">
+            <div>
+              <div className="eyebrow">Projects</div>
+              <h2 className="font-extrabold text-base mt-1">Projects</h2>
+              <p className="small">{data.projects.total} total · {data.projects.inProgress} in progress</p>
             </div>
-            <ArrowRight className="h-4 w-4 text-muted group-hover:text-memorization transition-colors mt-1" />
+            <ArrowRight className="h-4 w-4 text-[#6b7280] group-hover:text-[#635bff] mt-1" />
           </div>
         </Link>
       </div>
