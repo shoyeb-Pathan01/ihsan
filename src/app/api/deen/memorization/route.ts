@@ -9,7 +9,7 @@ export async function GET() {
     const logs = await prisma.quranMemorization.findMany({
       where: { profile_id: profile.id },
       orderBy: { created_at: "desc" },
-      take: 30,
+      take: 50,
     });
 
     return NextResponse.json({ logs });
@@ -25,18 +25,24 @@ export async function POST(request: Request) {
     if (!profile) return NextResponse.json({ error: "No profile" }, { status: 400 });
 
     const body = await request.json();
+    const { date, surah, ayah_from, ayah_to, is_new, confidence, mistakes, notes } = body;
+
+    if (!date || typeof date !== "string") return NextResponse.json({ error: "Date required" }, { status: 400 });
+    if (!surah || typeof surah !== "string") return NextResponse.json({ error: "Surah required" }, { status: 400 });
+    if (typeof ayah_from !== "number" || ayah_from < 1) return NextResponse.json({ error: "ayah_from must be a positive number" }, { status: 400 });
+    if (typeof ayah_to !== "number" || ayah_to < ayah_from) return NextResponse.json({ error: "ayah_to must be >= ayah_from" }, { status: 400 });
 
     const log = await prisma.quranMemorization.create({
       data: {
         profile_id: profile.id,
-        date: body.date,
-        surah: body.surah,
-        ayah_from: body.ayah_from,
-        ayah_to: body.ayah_to,
-        is_new: body.is_new,
-        confidence: body.confidence,
-        mistakes: body.mistakes || 0,
-        notes: body.notes,
+        date,
+        surah,
+        ayah_from,
+        ayah_to,
+        is_new: is_new ?? true,
+        confidence: confidence ?? 3,
+        mistakes: mistakes ?? 0,
+        notes: notes ?? "",
       },
     });
 
@@ -44,5 +50,27 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Memorization POST error:", error);
     return NextResponse.json({ error: "Failed to create" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+    try {
+      await prisma.quranMemorization.delete({ where: { id } });
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("Record to delete does not exist")) {
+        return NextResponse.json({ error: "Log not found" }, { status: 404 });
+      }
+      throw e;
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Memorization DELETE error:", error);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }

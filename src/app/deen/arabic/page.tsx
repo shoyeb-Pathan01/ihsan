@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, X, AlertCircle } from "lucide-react";
+import { ArrowRight, Check, AlertCircle } from "lucide-react";
 
 type Tab = "overview" | "lectures" | "practice" | "revision" | "mastery" | "notes";
 

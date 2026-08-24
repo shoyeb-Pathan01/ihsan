@@ -13,107 +13,50 @@ function today(): string {
 
 export async function GET() {
   try {
-    let profile = await prisma.profile.findFirst();
-    if (!profile) {
-      profile = await prisma.profile.create({ data: {} });
-    }
+    const profile = await prisma.profile.findFirst();
+    if (!profile) return NextResponse.json({ error: "No profile" }, { status: 400 });
 
     const now = today();
-    const daysRemaining = Math.max(0, daysBetween(now, profile.mission_end));
+    const daysRemaining = profile.mission_end ? Math.max(0, daysBetween(now, profile.mission_end)) : 0;
 
-    // Career progress
-    const totalTopics = await prisma.goalTopic.count();
-    const completedTopics = await prisma.goalTopic.count({
-      where: { status: { not: "not_started" } },
-    });
-
-    const communicationSessions = await prisma.communicationSession.count({
-      where: { profile_id: profile.id },
-    });
-
-    const projects = await prisma.project.count();
-
-    // Arabic progress (new system)
-    const totalLectures = await prisma.lisanLecture.count();
-    const completedLectures = await prisma.lisanLecture.count({
-      where: { status: "completed" },
-    });
-    const learningLectures = await prisma.lisanLecture.count({
-      where: { status: "learning" },
-    });
-
-    // Reading & Memorization
-    const readingPages = await prisma.quranReading.aggregate({
-      _sum: { pages: true },
-      where: { profile_id: profile.id },
-    });
-
-    const memorizationAyahs = await prisma.quranMemorization.aggregate({
-      _sum: { ayah_to: true },
-      where: { profile_id: profile.id, is_new: true },
-    });
-
-    const tahajjudNights = await prisma.tahajjudLog.count({
-      where: { profile_id: profile.id, completed: true },
-    });
+    const [totalTopics, completedTopics, communicationSessions, projects, totalLectures, completedLectures, learningLectures, readingPages, memorizationSessions, tahajjudNights, azureCurrent, arabicCurrent, reminder] = await Promise.all([
+      prisma.goalTopic.count(),
+      prisma.goalTopic.count({ where: { status: { not: "not_started" } } }),
+      prisma.communicationSession.count({ where: { profile_id: profile.id } }),
+      prisma.project.count(),
+      prisma.lisanLecture.count(),
+      prisma.lisanLecture.count({ where: { status: "completed" } }),
+      prisma.lisanLecture.count({ where: { status: "learning" } }),
+      prisma.quranReading.aggregate({ _sum: { pages: true }, where: { profile_id: profile.id } }),
+      prisma.quranMemorization.count({ where: { profile_id: profile.id, is_new: true } }),
+      prisma.tahajjudLog.count({ where: { profile_id: profile.id, completed: true } }),
+      prisma.goalTopic.findFirst({ where: { status: "learning" }, include: { module: true } }),
+      prisma.lisanLecture.findFirst({ where: { status: "learning" } }),
+      prisma.reminder.findFirst({ where: { enabled: true }, orderBy: { created_at: "asc" } }),
+    ]);
 
     const hasActivity =
-      completedTopics > 0 ||
-      completedLectures > 0 ||
-      learningLectures > 0 ||
-      (readingPages._sum.pages ?? 0) > 0 ||
-      tahajjudNights > 0 ||
-      communicationSessions > 0;
+      completedTopics > 0 || completedLectures > 0 || learningLectures > 0 ||
+      (readingPages._sum.pages ?? 0) > 0 || tahajjudNights > 0 || communicationSessions > 0;
 
     const azureProgress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
     const arabicProgress = totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0;
 
-    // Current learning items
-    const azureCurrent = await prisma.goalTopic.findFirst({
-      where: { status: "learning" },
-      include: { module: true },
-    });
-
-    const arabicCurrent = await prisma.lisanLecture.findFirst({
-      where: { status: "learning" },
-    });
-
-    const reminder = await prisma.reminder.findFirst({
-      where: { enabled: true },
-      orderBy: { created_at: "asc" },
-    });
-
     return NextResponse.json({
       profile: {
-        name: profile.name,
-        mission_start: profile.mission_start,
-        mission_end: profile.mission_end,
-        baseline_azure: profile.baseline_azure,
-        baseline_arabic: profile.baseline_arabic,
-        baseline_comm: profile.baseline_comm,
+        name: profile.name, mission_start: profile.mission_start, mission_end: profile.mission_end,
+        baseline_azure: profile.baseline_azure, baseline_arabic: profile.baseline_arabic, baseline_comm: profile.baseline_comm,
       },
       daysRemaining,
       hasActivity,
-      careerProgress: {
-        azure: azureProgress,
-        communication: communicationSessions,
-        projects,
-      },
+      careerProgress: { azure: azureProgress, communication: communicationSessions, projects },
       deenProgress: {
-        arabic: arabicProgress,
-        reading: readingPages._sum.pages ?? 0,
-        memorization: memorizationAyahs._sum.ayah_to ?? 0,
-        tahajjud: tahajjudNights,
+        arabic: arabicProgress, reading: readingPages._sum.pages ?? 0,
+        memorization: memorizationSessions, tahajjud: tahajjudNights,
       },
-      azureCurrent: azureCurrent
-        ? { title: azureCurrent.name, module: azureCurrent.module?.name || "" }
-        : null,
-      arabicCurrent: arabicCurrent
-        ? { title: arabicCurrent.title, lecture_number: arabicCurrent.lecture_number }
-        : null,
-      reminder: reminder
-        ? { text: reminder.text, source_type: reminder.source_type, reference: reminder.reference }
-        : null,
+      azureCurrent: azureCurrent ? { title: azureCurrent.name, module: azureCurrent.module?.name || "" } : null,
+      arabicCurrent: arabicCurrent ? { title: arabicCurrent.title, lecture_number: arabicCurrent.lecture_number } : null,
+      reminder: reminder ? { text: reminder.text, source_type: reminder.source_type, reference: reminder.reference } : null,
     });
   } catch (error) {
     console.error("Home API error:", error);

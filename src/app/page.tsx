@@ -130,9 +130,9 @@ export default function HomePage() {
       </div>
 
       {/* Mission Dashboard */}
-      <div className="grid-dashboard">
-        <div className="card">
-          <h2 className="font-extrabold text-base mb-4">Mission Dashboard</h2>
+      <div className="card">
+        <h2 className="font-extrabold text-base mb-4">Mission Dashboard</h2>
+        <div className="grid grid-cols-2 gap-4">
           <div className="goal">
             <div className="goal-head">
               <div>
@@ -156,36 +156,6 @@ export default function HomePage() {
             <div className="progress mt-2.5">
               <div className="bar" style={{ width: `${deenProgress.arabic}%` }}></div>
             </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="font-extrabold text-base mb-4">Today</h2>
-          <div className="grid gap-2.5">
-            <label className="check">
-              <input type="checkbox" disabled />
-              <span>
-                <b>Tahajjud</b>
-                <br />
-                <span className="small">Mark today complete</span>
-              </span>
-            </label>
-            <label className="check">
-              <input type="checkbox" disabled />
-              <span>
-                <b>Qur&apos;an Reading</b>
-                <br />
-                <span className="small">Mark today complete</span>
-              </span>
-            </label>
-            <label className="check">
-              <input type="checkbox" disabled />
-              <span>
-                <b>Communication</b>
-                <br />
-                <span className="small">Mark today complete</span>
-              </span>
-            </label>
           </div>
         </div>
       </div>

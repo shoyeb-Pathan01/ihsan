@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, X, ExternalLink } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink } from "lucide-react";
 
 interface LectureDetail {
   id: string;

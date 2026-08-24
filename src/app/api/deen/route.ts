@@ -6,43 +6,21 @@ export async function GET() {
     const profile = await prisma.profile.findFirst();
     const profileId = profile?.id;
 
-    const totalLectures = await prisma.lisanLecture.count();
-    const watchedLectures = await prisma.lisanLecture.count({ where: { watched: true } });
-    const avgMastery = await prisma.lisanLecture.aggregate({ _avg: { mastery_percentage: true } });
-
-    const readingPages = profileId
-      ? await prisma.quranReading.aggregate({ _sum: { pages: true }, _count: { id: true }, where: { profile_id: profileId } })
-      : { _sum: { pages: 0 }, _count: { id: 0 } };
-
-    const readingDays = profileId
-      ? await prisma.quranReading.findMany({ where: { profile_id: profileId }, select: { date: true }, distinct: ["date"] })
-      : [];
-
-    const memorizationAyahs = profileId
-      ? await prisma.quranMemorization.aggregate({ _sum: { ayah_to: true }, _count: { id: true }, where: { profile_id: profileId, is_new: true } })
-      : { _sum: { ayah_to: 0 }, _count: { id: 0 } };
-
-    const tahajjudNights = profileId
-      ? await prisma.tahajjudLog.count({ where: { profile_id: profileId, completed: true } })
-      : 0;
+    const [totalLectures, watchedLectures, avgMastery, readingPages, readingDays, memorizationSessions, tahajjudNights] = await Promise.all([
+      prisma.lisanLecture.count(),
+      prisma.lisanLecture.count({ where: { watched: true } }),
+      prisma.lisanLecture.aggregate({ _avg: { mastery_percentage: true } }),
+      profileId ? prisma.quranReading.aggregate({ _sum: { pages: true }, _count: { id: true }, where: { profile_id: profileId } }) : Promise.resolve({ _sum: { pages: 0 }, _count: { id: 0 } }),
+      profileId ? prisma.quranReading.findMany({ where: { profile_id: profileId }, select: { date: true }, distinct: ["date"] }) : Promise.resolve([]),
+      profileId ? prisma.quranMemorization.count({ where: { profile_id: profileId, is_new: true } }) : Promise.resolve(0),
+      profileId ? prisma.tahajjudLog.count({ where: { profile_id: profileId, completed: true } }) : Promise.resolve(0),
+    ]);
 
     return NextResponse.json({
-      arabic: {
-        watched: watchedLectures,
-        total: totalLectures,
-        mastery: Math.round(avgMastery._avg?.mastery_percentage ?? 0),
-      },
-      reading: {
-        pages: readingPages._sum.pages ?? 0,
-        days: readingDays.length,
-      },
-      memorization: {
-        ayahs: memorizationAyahs._sum.ayah_to ?? 0,
-        sessions: memorizationAyahs._count,
-      },
-      tahajjud: {
-        nights: tahajjudNights,
-      },
+      arabic: { watched: watchedLectures, total: totalLectures, mastery: Math.round(avgMastery._avg?.mastery_percentage ?? 0) },
+      reading: { pages: readingPages._sum.pages ?? 0, days: readingDays.length },
+      memorization: { ayahs: memorizationSessions, sessions: memorizationSessions },
+      tahajjud: { nights: tahajjudNights },
     });
   } catch (error) {
     console.error("Deen API error:", error);

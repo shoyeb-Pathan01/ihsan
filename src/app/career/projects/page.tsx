@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 interface Project {
   id: string; name: string; objective: string | null; status: string;

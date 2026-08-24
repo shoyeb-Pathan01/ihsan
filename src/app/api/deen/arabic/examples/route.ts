@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-// GET /api/deen/arabic/examples - Get examples for a lecture
+const EXAMPLE_ALLOWED_FIELDS = {
+  lecture_id: true, arabic_text: true, translation: true,
+  grammar_note: true, category: true,
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -23,23 +27,33 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/deen/arabic/examples - Create or update example
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...data } = body;
+    const { id, ...rawData } = body;
 
-    if (id) {
-      const example = await prisma.arabicExample.update({
-        where: { id },
-        data,
-      });
-      return NextResponse.json({ example });
+    const safeData: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(rawData)) {
+      if (EXAMPLE_ALLOWED_FIELDS[key as keyof typeof EXAMPLE_ALLOWED_FIELDS] && val !== undefined) safeData[key] = val;
     }
 
-    const example = await prisma.arabicExample.create({
-      data,
-    });
+    if (!safeData.lecture_id) {
+      return NextResponse.json({ error: "lecture_id required" }, { status: 400 });
+    }
+
+    if (id) {
+      try {
+        const example = await prisma.arabicExample.update({ where: { id }, data: safeData });
+        return NextResponse.json({ example });
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes("Record to ")) {
+          return NextResponse.json({ error: "Example not found" }, { status: 404 });
+        }
+        throw e;
+      }
+    }
+
+    const example = await prisma.arabicExample.create({ data: safeData as never });
     return NextResponse.json({ example });
   } catch (error) {
     console.error("Error saving example:", error);
@@ -47,21 +61,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/deen/arabic/examples - Delete example
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Example ID required" }, { status: 400 });
 
-    if (!id) {
-      return NextResponse.json({ error: "Example ID required" }, { status: 400 });
+    try {
+      await prisma.arabicExample.delete({ where: { id } });
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message.includes("Record to ")) {
+        return NextResponse.json({ error: "Example not found" }, { status: 404 });
+      }
+      throw e;
     }
 
-    await prisma.arabicExample.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Error deleting example:", error);
     return NextResponse.json({ error: "Failed to delete example" }, { status: 500 });

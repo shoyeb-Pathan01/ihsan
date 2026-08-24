@@ -28,7 +28,6 @@
     "date-fns": "^4.4.0",
     "lucide-react": "^1.33.0",
     "next": "16.3.2",
-    "prisma": "^7.9.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "tailwind-merge": "^3.6.0"
@@ -41,6 +40,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "prisma": "^7.9.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5"

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 
 interface Session {
   id: string; date: string; practice_type: string; duration_minutes: number | null;

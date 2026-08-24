@@ -74,6 +74,10 @@ model GoalTopic {
   goal                  Goal     @relation(fields: [goal_id], references: [id])
   module                GoalModule? @relation(fields: [module_id], references: [id])
   progress_history      TopicProgress[]
+
+  @@index([goal_id])
+  @@index([module_id])
+  @@index([status])
 }
 
 model TopicProgress {
@@ -87,6 +91,9 @@ model TopicProgress {
   created_at         DateTime @default(now())
 
   topic              GoalTopic @relation(fields: [topic_id], references: [id])
+
+  @@index([topic_id])
+  @@unique([topic_id, date])
 }
 
 model AzureSession {
@@ -98,6 +105,8 @@ model AzureSession {
   completed_at   DateTime?
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
+
+  @@unique([session_number])
 }
 
 model AzurePractical {
@@ -110,6 +119,8 @@ model AzurePractical {
   completed_at    DateTime?
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
+
+  @@unique([practical_number])
 }
 
 model LisanLecture {
@@ -151,6 +162,10 @@ model LisanLecture {
   notes                 ArabicNote[]
   examples              ArabicExample[]
   explain_sessions      ArabicExplainIt[]
+
+  @@unique([lecture_number])
+  @@index([status])
+  @@index([next_revision_date])
 }
 
 model ArabicPractice {
@@ -237,6 +252,8 @@ model DailyTask {
   updated_at  DateTime @updatedAt
 
   profile     Profile  @relation(fields: [profile_id], references: [id])
+
+  @@index([profile_id, date])
 }
 
 model DailyPlan {
@@ -250,6 +267,8 @@ model DailyPlan {
   completed   Boolean  @default(false)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+
+  @@index([profile_id, date])
 }
 
 model QuranReading {
@@ -266,6 +285,8 @@ model QuranReading {
   updated_at       DateTime @updatedAt
 
   profile          Profile  @relation(fields: [profile_id], references: [id])
+
+  @@index([profile_id, date])
 }
 
 model QuranMemorization {
@@ -283,6 +304,8 @@ model QuranMemorization {
   updated_at    DateTime @updatedAt
 
   profile       Profile  @relation(fields: [profile_id], references: [id])
+
+  @@index([profile_id, date])
 }
 
 model TahajjudLog {
@@ -316,6 +339,8 @@ model CommunicationSession {
   updated_at       DateTime @updatedAt
 
   profile          Profile  @relation(fields: [profile_id], references: [id])
+
+  @@index([profile_id, date])
 }
 
 model Project {
