@@ -136,16 +136,24 @@ export default function LectureDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const togglePipeline = async (field: string, value: boolean) => {
-    await updateLecture({ [field]: value });
-    // Recalculate completion
-    if (lecture) {
-      const fields = ["watched", "book", "lecture_notes", "quranic_examples"];
-      const updated = { ...lecture, [field]: value };
-      const completed = fields.filter((f) => updated[f as keyof LectureDetail] as boolean).length;
-      const completion = Math.round((completed / fields.length) * 100);
-      const status = completion === 100 ? "completed" : completion > 0 ? "learning" : "not_started";
-      await updateLecture({ completion_percentage: completion, status });
-    }
+    if (!lecture) return;
+    // Calculate completion locally first
+    const fields = ["watched", "book", "lecture_notes", "quranic_examples"];
+    const updated = { ...lecture, [field]: value };
+    const completed = fields.filter((f) => updated[f as keyof LectureDetail] as boolean).length;
+    const completion = Math.round((completed / fields.length) * 100);
+    const status = completion === 100 ? "completed" : completion > 0 ? "learning" : "not_started";
+
+    // Single PATCH call with all updates
+    setSaving(true);
+    try {
+      await fetch("/api/deen/arabic", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, [field]: value, completion_percentage: completion, status }),
+      });
+      setLecture((prev) => prev ? { ...prev, [field]: value, completion_percentage: completion, status } : null);
+    } catch {} finally { setSaving(false); }
   };
 
   const submitRevision = async () => {

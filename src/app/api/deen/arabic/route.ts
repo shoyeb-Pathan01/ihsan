@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     } else if (tab === "practice") {
       const lecturesWithPractice = lectures.filter((l) => l.practices.length > 0);
       tabData = {
-        lectures: lecturesWithPractice.map((l) => ({
+        practice_lectures: lecturesWithPractice.map((l) => ({
           id: l.id,
           lecture_number: l.lecture_number,
           title: l.title,
