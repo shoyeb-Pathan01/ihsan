@@ -8,7 +8,7 @@ export async function GET() {
 
     const totalLectures = await prisma.lisanLecture.count();
     const watchedLectures = await prisma.lisanLecture.count({ where: { watched: true } });
-    const avgMastery = await prisma.lisanLecture.aggregate({ _avg: { mastery: true } });
+    const avgMastery = await prisma.lisanLecture.aggregate({ _avg: { mastery_percentage: true } });
 
     const readingPages = profileId
       ? await prisma.quranReading.aggregate({ _sum: { pages: true }, _count: { id: true }, where: { profile_id: profileId } })
@@ -30,7 +30,7 @@ export async function GET() {
       arabic: {
         watched: watchedLectures,
         total: totalLectures,
-        mastery: Math.round(avgMastery._avg.mastery ?? 0),
+        mastery: Math.round(avgMastery._avg?.mastery_percentage ?? 0),
       },
       reading: {
         pages: readingPages._sum.pages ?? 0,

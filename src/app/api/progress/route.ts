@@ -30,8 +30,8 @@ export async function GET() {
     const completedPracticals = await prisma.azurePractical.count({ where: { status: "completed" } });
 
     const totalLectures = await prisma.lisanLecture.count();
-    const watchedLectures = await prisma.lisanLecture.count({ where: { watched: true } });
-    const avgMastery = await prisma.lisanLecture.aggregate({ _avg: { mastery: true } });
+    const completedLectures = await prisma.lisanLecture.count({ where: { status: "completed" } });
+    const avgMastery = await prisma.lisanLecture.aggregate({ _avg: { mastery_percentage: true } });
 
     const readingPages = await prisma.quranReading.aggregate({ _sum: { pages: true }, where: { profile_id: profile.id } });
     const readingDays = await prisma.quranReading.findMany({ where: { profile_id: profile.id }, select: { date: true }, distinct: ["date"] });
@@ -45,7 +45,7 @@ export async function GET() {
     const projects = await prisma.project.count();
     const completedProjects = await prisma.project.count({ where: { status: "completed" } });
 
-    const hasActivity = completedSessions > 0 || watchedLectures > 0 || (readingPages._sum.pages ?? 0) > 0 || tahajjudNights > 0 || communicationSessions > 0;
+    const hasActivity = completedSessions > 0 || completedLectures > 0 || (readingPages._sum.pages ?? 0) > 0 || tahajjudNights > 0 || communicationSessions > 0;
 
     const azureCompletion = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
     const azureMastery = totalTopics > 0 ? Math.round(masteredTopics / totalTopics * 100) : 0;
@@ -60,7 +60,7 @@ export async function GET() {
         projects: { total: projects, completed: completedProjects },
       },
       deen: {
-        arabic: { watched: watchedLectures, total: totalLectures, mastery: Math.round(avgMastery._avg.mastery ?? 0) },
+        arabic: { watched: completedLectures, total: totalLectures, mastery: Math.round(avgMastery._avg?.mastery_percentage ?? 0) },
         reading: { pages: readingPages._sum.pages ?? 0, days: readingDays.length },
         memorization: { ayahs: memorizationAyahs._sum.ayah_to ?? 0, sessions: memorizationAyahs._count },
         tahajjud: { nights: tahajjudNights },

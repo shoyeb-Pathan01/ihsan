@@ -20,32 +20,29 @@ export async function GET() {
 
     const now = today();
     const daysRemaining = Math.max(0, daysBetween(now, profile.mission_end));
-    const dayNumber = Math.max(1, 60 - daysRemaining);
 
-    const todayTasks = await prisma.dailyTask.count({
-      where: { profile_id: profile.id, date: now },
-    });
-
-    const totalSessions = await prisma.azureSession.count();
-    const completedSessions = await prisma.azureSession.count({
-      where: { status: "completed" },
-    });
-
-    const totalPracticals = await prisma.azurePractical.count();
-    const completedPracticals = await prisma.azurePractical.count({
-      where: { status: "completed" },
-    });
-
+    // Career progress
     const totalTopics = await prisma.goalTopic.count();
     const completedTopics = await prisma.goalTopic.count({
       where: { status: { not: "not_started" } },
     });
 
-    const totalLectures = await prisma.lisanLecture.count();
-    const watchedLectures = await prisma.lisanLecture.count({
-      where: { watched: true },
+    const communicationSessions = await prisma.communicationSession.count({
+      where: { profile_id: profile.id },
     });
 
+    const projects = await prisma.project.count();
+
+    // Arabic progress (new system)
+    const totalLectures = await prisma.lisanLecture.count();
+    const completedLectures = await prisma.lisanLecture.count({
+      where: { status: "completed" },
+    });
+    const learningLectures = await prisma.lisanLecture.count({
+      where: { status: "learning" },
+    });
+
+    // Reading & Memorization
     const readingPages = await prisma.quranReading.aggregate({
       _sum: { pages: true },
       where: { profile_id: profile.id },
@@ -60,21 +57,26 @@ export async function GET() {
       where: { profile_id: profile.id, completed: true },
     });
 
-    const communicationSessions = await prisma.communicationSession.count({
-      where: { profile_id: profile.id },
-    });
-
-    const projects = await prisma.project.count();
-
     const hasActivity =
-      completedSessions > 0 ||
-      watchedLectures > 0 ||
+      completedTopics > 0 ||
+      completedLectures > 0 ||
+      learningLectures > 0 ||
       (readingPages._sum.pages ?? 0) > 0 ||
       tahajjudNights > 0 ||
       communicationSessions > 0;
 
     const azureProgress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
-    const arabicProgress = totalLectures > 0 ? Math.round((watchedLectures / totalLectures) * 100) : 0;
+    const arabicProgress = totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0;
+
+    // Current learning items
+    const azureCurrent = await prisma.goalTopic.findFirst({
+      where: { status: "learning" },
+      include: { module: true },
+    });
+
+    const arabicCurrent = await prisma.lisanLecture.findFirst({
+      where: { status: "learning" },
+    });
 
     const reminder = await prisma.reminder.findFirst({
       where: { enabled: true },
@@ -91,7 +93,6 @@ export async function GET() {
         baseline_comm: profile.baseline_comm,
       },
       daysRemaining,
-      dayNumber,
       hasActivity,
       careerProgress: {
         azure: azureProgress,
@@ -104,7 +105,12 @@ export async function GET() {
         memorization: memorizationAyahs._sum.ayah_to ?? 0,
         tahajjud: tahajjudNights,
       },
-      todayFocus: null,
+      azureCurrent: azureCurrent
+        ? { title: azureCurrent.name, module: azureCurrent.module?.name || "" }
+        : null,
+      arabicCurrent: arabicCurrent
+        ? { title: arabicCurrent.title, lecture_number: arabicCurrent.lecture_number }
+        : null,
       reminder: reminder
         ? { text: reminder.text, source_type: reminder.source_type, reference: reminder.reference }
         : null,

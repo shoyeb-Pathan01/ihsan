@@ -113,20 +113,116 @@ model AzurePractical {
 }
 
 model LisanLecture {
-  id               String   @id @default(cuid())
-  lecture_number   Int
-  title            String
-  duration_seconds Int?
-  watched          Boolean  @default(false)
-  book             Boolean  @default(false)
-  notes            Boolean  @default(false)
-  examples         Boolean  @default(false)
-  practice         Boolean  @default(false)
-  mastery          Float    @default(0)
-  started_at       DateTime?
-  completed_at     DateTime?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  lecture_number        Int
+  title                 String
+  duration_seconds      Int?
+  status                String   @default("not_started") // "not_started" | "learning" | "completed"
+  // Content pipeline
+  watched               Boolean  @default(false)
+  book                  Boolean  @default(false)
+  lecture_notes         Boolean  @default(false) // renamed from 'notes' to avoid conflict
+  quranic_examples      Boolean  @default(false)
+  // Practice
+  practice_status       String   @default("not_started") // "not_started" | "in_progress" | "completed"
+  practice_notes_ok     Boolean  @default(false)
+  practice_examples_ok  Boolean  @default(false)
+  practice_exercises_ok Boolean  @default(false)
+  practice_explain_ok   Boolean  @default(false)
+  // Revision
+  revision_count        Int      @default(0)
+  last_revision_date    String?  // YYYY-MM-DD
+  next_revision_date    String?  // YYYY-MM-DD
+  // Mastery
+  completion_percentage Float    @default(0)
+  mastery_percentage    Float    @default(0)
+  quiz_score            Int?     // 0-100
+  understanding         Int?     // 1-5
+  confidence            Int?     // 1-5
+  // Tracking
+  started_at            DateTime?
+  completed_at          DateTime?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  // Relations
+  practices             ArabicPractice[]
+  revisions             ArabicRevision[]
+  notes                 ArabicNote[]
+  examples              ArabicExample[]
+  explain_sessions      ArabicExplainIt[]
+}
+
+model ArabicPractice {
+  id              String   @id @default(cuid())
+  lecture_id      String
+  exercise_number Int
+  title           String
+  description     String?
+  exercise_type   String   @default("identify") // "identify" | "classify" | "explain" | "recall" | "apply" | "analyze"
+  status          String   @default("not_started") // "not_started" | "in_progress" | "completed"
+  user_answer     String?
+  completed_at    DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  lecture         LisanLecture @relation(fields: [lecture_id], references: [id])
+}
+
+model ArabicRevision {
+  id                String   @id @default(cuid())
+  lecture_id        String
+  date              String   // YYYY-MM-DD
+  understanding     Int      // 1-5
+  confidence        Int      // 1-5
+  struggles         String?
+  next_revision_date String? // YYYY-MM-DD
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  lecture           LisanLecture @relation(fields: [lecture_id], references: [id])
+}
+
+model ArabicNote {
+  id                String   @id @default(cuid())
+  lecture_id        String?
+  topic             String?  // e.g. "Ism", "Fi'l", "Harf"
+  arabic_term       String?
+  meaning           String?
+  examples          String?  // JSON array of examples
+  my_understanding  String?
+  category          String?  // "term" | "grammar" | "quranic" | "general"
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  lecture           LisanLecture? @relation(fields: [lecture_id], references: [id])
+}
+
+model ArabicExample {
+  id                String   @id @default(cuid())
+  lecture_id        String
+  arabic_text       String
+  translation       String?
+  my_analysis       String?
+  term_identified   String?  // e.g. "Ism", "Fi'l", "Harf"
+  meaning           String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  lecture           LisanLecture @relation(fields: [lecture_id], references: [id])
+}
+
+model ArabicExplainIt {
+  id                String   @id @default(cuid())
+  lecture_id        String
+  prompt            String   // e.g. "Explain what Ism is without looking at notes"
+  understanding     Int?     // 1-5
+  confidence        Int?     // 1-5
+  notes             String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  lecture           LisanLecture @relation(fields: [lecture_id], references: [id])
 }
 
 model DailyTask {

@@ -103,19 +103,49 @@ async function main() {
   }
   console.log("Azure practicals created");
 
-  // Create Arabic lectures - all not watched
+  // Create Arabic lectures - all not started (full learning pipeline)
   for (const lecture of LISAN_LECTURES) {
-    await prisma.lisanLecture.create({
+    const lisanLecture = await prisma.lisanLecture.create({
       data: {
         lecture_number: lecture.lecture_number,
         title: lecture.title,
         duration_seconds: lecture.duration_seconds,
+        status: "not_started",
+        // Content pipeline - all false
         watched: false,
-        mastery: 0,
+        book: false,
+        lecture_notes: false,
+        quranic_examples: false,
+        // Practice - not started
+        practice_status: "not_started",
+        practice_notes_ok: false,
+        practice_examples_ok: false,
+        practice_exercises_ok: false,
+        practice_explain_ok: false,
+        // Revision - zero
+        revision_count: 0,
+        // Mastery - zero
+        completion_percentage: 0,
+        mastery_percentage: 0,
       },
     });
+
+    // Create 3 sample practice exercises per lecture
+    const exerciseTypes = ["identify", "classify", "explain"];
+    for (let i = 0; i < 3; i++) {
+      await prisma.arabicPractice.create({
+        data: {
+          lecture_id: lisanLecture.id,
+          exercise_number: i + 1,
+          title: `Exercise ${i + 1}: ${exerciseTypes[i].charAt(0).toUpperCase() + exerciseTypes[i].slice(1)} task`,
+          description: `Practice ${exerciseTypes[i]} exercise for Lecture ${lecture.lecture_number}`,
+          exercise_type: exerciseTypes[i],
+          status: "not_started",
+        },
+      });
+    }
   }
-  console.log("Arabic lectures created (all not watched)");
+  console.log("Arabic lectures created with practice exercises (all not started)");
 
   // Create Arabic goal module and topics
   const lisanModule = await prisma.goalModule.create({

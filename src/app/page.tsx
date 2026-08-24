@@ -17,6 +17,8 @@ interface HomeData {
   careerProgress: { azure: number; communication: number; projects: number };
   deenProgress: { arabic: number; reading: number; memorization: number; tahajjud: number };
   reminder: { text: string; source_type: string; reference: string } | null;
+  azureCurrent?: { title: string; module: string } | null;
+  arabicCurrent?: { title: string; lecture_number: number } | null;
 }
 
 const quotes = [
@@ -45,7 +47,7 @@ export default function HomePage() {
     return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-[#6b7280] text-sm">Failed to load.</p></div>;
   }
 
-  const { profile, daysRemaining, hasActivity, careerProgress, deenProgress, reminder } = data;
+  const { profile, daysRemaining, hasActivity, careerProgress, deenProgress, reminder, azureCurrent, arabicCurrent } = data;
   const quote = quotes[new Date().getDate() % quotes.length];
 
   const formatDate = (d: string) => {
@@ -74,190 +76,140 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Welcome State */}
-      {!hasActivity && (
-        <>
-          {/* Stats row */}
-          <div className="grid-stats">
-            <div className="card">
-              <div className="stat-label">Target</div>
-              <div className="stat text-[22px]">{formatDate(profile?.mission_end || "2027-01-01")}</div>
-              <div className="small">{daysRemaining} days remaining</div>
-            </div>
-            <div className="card">
-              <div className="stat-label">Career</div>
-              <div className="stat">0%</div>
-              <div className="small">started</div>
-            </div>
-            <div className="card">
-              <div className="stat-label">Qur&apos;an</div>
-              <div className="stat">0%</div>
-              <div className="small">started</div>
-            </div>
-            <div className="card">
-              <div className="stat-label">Sessions</div>
-              <div className="stat">0</div>
-              <div className="small">logged</div>
-            </div>
-          </div>
+      {/* Stats row */}
+      <div className="grid-stats">
+        <div className="card">
+          <div className="stat-label">Target</div>
+          <div className="stat text-[22px]">{formatDate(profile?.mission_end || "2027-01-01")}</div>
+          <div className="small">{daysRemaining} days remaining</div>
+        </div>
+        <div className="card">
+          <div className="stat-label">Azure</div>
+          <div className="stat">{careerProgress.azure}%</div>
+          <div className="small">completion</div>
+        </div>
+        <div className="card">
+          <div className="stat-label">Arabic</div>
+          <div className="stat">{deenProgress.arabic}%</div>
+          <div className="small">mastery</div>
+        </div>
+        <div className="card">
+          <div className="stat-label">Sessions</div>
+          <div className="stat">{careerProgress.communication + deenProgress.reading + deenProgress.memorization}</div>
+          <div className="small">logged</div>
+        </div>
+      </div>
 
-          {/* Dashboard grid */}
-          <div className="grid-dashboard">
-            <div className="card">
-              <h2 className="font-extrabold text-base mb-4">Mission Dashboard</h2>
-              {/* Career goals */}
-              <div className="goal">
-                <div className="goal-head">
-                  <div>
-                    <div className="goal-name">Azure Administration</div>
-                    <div className="small">Become a solid Azure Administrator</div>
-                  </div>
-                  <span className="badge">0%</span>
-                </div>
-                <div className="progress mt-2.5">
-                  <div className="bar" style={{ width: "0%" }}></div>
-                </div>
+      {/* Today's Focus */}
+      <div className="card">
+        <div className="eyebrow mb-3">Today&apos;s Focus</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 bg-[#f6f7fb] rounded-xl">
+            <div className="text-[12px] text-[#6b7280] mb-1">Career</div>
+            {azureCurrent ? (
+              <div>
+                <div className="font-bold text-sm">Azure — {azureCurrent.title}</div>
+                <div className="text-[12px] text-[#6b7280]">{azureCurrent.module}</div>
               </div>
-              <div className="goal">
-                <div className="goal-head">
-                  <div>
-                    <div className="goal-name">Qur&apos;anic Arabic</div>
-                    <div className="small">Lisān-ul-Qur&apos;ān Level 1</div>
-                  </div>
-                  <span className="badge">0%</span>
-                </div>
-                <div className="progress mt-2.5">
-                  <div className="bar" style={{ width: "0%" }}></div>
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <h2 className="font-extrabold text-base mb-4">Today</h2>
-              <div className="grid gap-2.5">
-                <label className="check">
-                  <input type="checkbox" disabled />
-                  <span>
-                    <b>Tahajjud</b>
-                    <br />
-                    <span className="small">Mark today complete</span>
-                  </span>
-                </label>
-                <label className="check">
-                  <input type="checkbox" disabled />
-                  <span>
-                    <b>Qur&apos;an Reading</b>
-                    <br />
-                    <span className="small">Mark today complete</span>
-                  </span>
-                </label>
-                <label className="check">
-                  <input type="checkbox" disabled />
-                  <span>
-                    <b>Communication</b>
-                    <br />
-                    <span className="small">Mark today complete</span>
-                  </span>
-                </label>
-              </div>
-              <Link href="/deen" className="btn-primary mt-3.5 w-full block text-center text-sm">
-                Open Qur&apos;an Journey
-              </Link>
-            </div>
+            ) : (
+              <div className="font-bold text-sm text-[#6b7280]">No active session</div>
+            )}
           </div>
-        </>
-      )}
+          <div className="p-4 bg-[#f6f7fb] rounded-xl">
+            <div className="text-[12px] text-[#6b7280] mb-1">Deen</div>
+            {arabicCurrent ? (
+              <div>
+                <div className="font-bold text-sm">Arabic — Lecture {arabicCurrent.lecture_number}</div>
+                <div className="text-[12px] text-[#6b7280]">{arabicCurrent.title}</div>
+              </div>
+            ) : (
+              <div className="font-bold text-sm text-[#6b7280]">No active lecture</div>
+            )}
+          </div>
+        </div>
+      </div>
 
-      {/* Active state */}
-      {hasActivity && (
-        <>
-          {/* Stats row */}
-          <div className="grid-stats">
-            <div className="card">
-              <div className="stat-label">Active Goals</div>
-              <div className="stat">4</div>
-              <div className="small">Azure + Qur&apos;an</div>
+      {/* Mission Dashboard */}
+      <div className="grid-dashboard">
+        <div className="card">
+          <h2 className="font-extrabold text-base mb-4">Mission Dashboard</h2>
+          <div className="goal">
+            <div className="goal-head">
+              <div>
+                <div className="goal-name">Azure Administration</div>
+                <div className="small">Become a solid Azure Administrator</div>
+              </div>
+              <span className="badge">{careerProgress.azure}%</span>
             </div>
-            <div className="card">
-              <div className="stat-label">Azure Progress</div>
-              <div className="stat">{careerProgress.azure}%</div>
-              <div className="small">{careerProgress.communication} communication sessions</div>
-            </div>
-            <div className="card">
-              <div className="stat-label">Qur&apos;an Reading</div>
-              <div className="stat">{deenProgress.reading}</div>
-              <div className="small">sessions logged</div>
-            </div>
-            <div className="card">
-              <div className="stat-label">Memorization</div>
-              <div className="stat">{deenProgress.memorization}</div>
-              <div className="small">sessions logged</div>
+            <div className="progress mt-2.5">
+              <div className="bar" style={{ width: `${careerProgress.azure}%` }}></div>
             </div>
           </div>
+          <div className="goal">
+            <div className="goal-head">
+              <div>
+                <div className="goal-name">Qur&apos;anic Arabic</div>
+                <div className="small">Lisān-ul-Qur&apos;ān Level 1</div>
+              </div>
+              <span className="badge">{deenProgress.arabic}%</span>
+            </div>
+            <div className="progress mt-2.5">
+              <div className="bar" style={{ width: `${deenProgress.arabic}%` }}></div>
+            </div>
+          </div>
+        </div>
 
-          {/* Dashboard grid */}
-          <div className="grid-dashboard">
-            <div className="card">
-              <h2 className="font-extrabold text-base mb-4">Mission Dashboard</h2>
-              <div className="goal">
-                <div className="goal-head">
-                  <div>
-                    <div className="goal-name">Azure Administration</div>
-                    <div className="small">Become a solid Azure Administrator</div>
-                  </div>
-                  <span className="badge">{careerProgress.azure}%</span>
-                </div>
-                <div className="progress mt-2.5">
-                  <div className="bar" style={{ width: `${careerProgress.azure}%` }}></div>
-                </div>
-              </div>
-              <div className="goal">
-                <div className="goal-head">
-                  <div>
-                    <div className="goal-name">Qur&apos;anic Arabic</div>
-                    <div className="small">Lisān-ul-Qur&apos;ān Level 1</div>
-                  </div>
-                  <span className="badge">{deenProgress.arabic}%</span>
-                </div>
-                <div className="progress mt-2.5">
-                  <div className="bar" style={{ width: `${deenProgress.arabic}%` }}></div>
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <h2 className="font-extrabold text-base mb-4">Today</h2>
-              <div className="grid gap-2.5">
-                <label className="check">
-                  <input type="checkbox" disabled />
-                  <span>
-                    <b>Tahajjud</b>
-                    <br />
-                    <span className="small">Mark today complete</span>
-                  </span>
-                </label>
-                <label className="check">
-                  <input type="checkbox" disabled />
-                  <span>
-                    <b>Qur&apos;an Reading</b>
-                    <br />
-                    <span className="small">Mark today complete</span>
-                  </span>
-                </label>
-                <label className="check">
-                  <input type="checkbox" disabled />
-                  <span>
-                    <b>Communication</b>
-                    <br />
-                    <span className="small">Mark today complete</span>
-                  </span>
-                </label>
-              </div>
-              <Link href="/deen" className="btn-primary mt-3.5 w-full block text-center text-sm">
-                Open Qur&apos;an Journey
-              </Link>
-            </div>
+        <div className="card">
+          <h2 className="font-extrabold text-base mb-4">Today</h2>
+          <div className="grid gap-2.5">
+            <label className="check">
+              <input type="checkbox" disabled />
+              <span>
+                <b>Tahajjud</b>
+                <br />
+                <span className="small">Mark today complete</span>
+              </span>
+            </label>
+            <label className="check">
+              <input type="checkbox" disabled />
+              <span>
+                <b>Qur&apos;an Reading</b>
+                <br />
+                <span className="small">Mark today complete</span>
+              </span>
+            </label>
+            <label className="check">
+              <input type="checkbox" disabled />
+              <span>
+                <b>Communication</b>
+                <br />
+                <span className="small">Mark today complete</span>
+              </span>
+            </label>
           </div>
-        </>
-      )}
+        </div>
+      </div>
+
+      {/* Continue Learning */}
+      <div className="card">
+        <div className="eyebrow mb-3">Continue Learning</div>
+        <div className="grid grid-cols-2 gap-4">
+          <Link href="/career/azure" className="p-4 bg-[#f6f7fb] rounded-xl hover:shadow-lg transition-shadow block">
+            <div className="text-[12px] text-[#6b7280] mb-1">Career</div>
+            <div className="font-bold text-sm">Azure Networking</div>
+            <div className="text-[13px] text-[#635bff] mt-2 flex items-center gap-1">
+              Continue <ArrowRight className="h-3 w-3" />
+            </div>
+          </Link>
+          <Link href="/deen/arabic" className="p-4 bg-[#f6f7fb] rounded-xl hover:shadow-lg transition-shadow block">
+            <div className="text-[12px] text-[#6b7280] mb-1">Deen</div>
+            <div className="font-bold text-sm">Lisān-ul-Qur&apos;ān — {arabicCurrent ? `Lecture ${arabicCurrent.lecture_number}` : "Start"}</div>
+            <div className="text-[13px] text-[#635bff] mt-2 flex items-center gap-1">
+              Continue <ArrowRight className="h-3 w-3" />
+            </div>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
