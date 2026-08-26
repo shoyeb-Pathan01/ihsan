@@ -77,16 +77,32 @@ export async function GET(request: NextRequest) {
     let tabData: Record<string, unknown> = {};
 
     if (tab === "lectures") {
-      tabData = {
-        lectures: allLectures.map((l) => ({
-          id: l.id, lecture_number: l.lecture_number, title: l.title,
-          duration_seconds: l.duration_seconds, status: l.status,
-          completion_percentage: l.completion_percentage, mastery_percentage: l.mastery_percentage,
-          watched: l.watched, book: l.book, lecture_notes: l.lecture_notes,
-          quranic_examples: l.quranic_examples, practice_status: l.practice_status,
-          revision_count: l.revision_count, next_revision_date: l.next_revision_date,
-        })),
-      };
+      let lectures = allLectures.map((l) => ({
+        id: l.id, lecture_number: l.lecture_number, title: l.title,
+        youtube_url: l.youtube_url, status: l.status,
+        completion_percentage: l.completion_percentage, mastery_percentage: l.mastery_percentage,
+        watched: l.watched, book: l.book, lecture_notes: l.lecture_notes,
+        quranic_examples: l.quranic_examples, practice_status: l.practice_status,
+        revision_count: l.revision_count, next_revision_date: l.next_revision_date,
+      }));
+
+      const search = searchParams.get("search");
+      const filter = searchParams.get("filter");
+
+      if (search) {
+        const q = search.toLowerCase();
+        lectures = lectures.filter((l) =>
+          l.title.toLowerCase().includes(q) || String(l.lecture_number).includes(q)
+        );
+      }
+
+      if (filter === "not_started") lectures = lectures.filter((l) => l.status === "not_started");
+      else if (filter === "learning") lectures = lectures.filter((l) => l.status === "learning");
+      else if (filter === "completed") lectures = lectures.filter((l) => l.status === "completed");
+      else if (filter === "needs_revision") lectures = lectures.filter((l) => l.next_revision_date && l.next_revision_date <= today);
+      else if (filter === "mastered") lectures = lectures.filter((l) => l.mastery_percentage >= 80);
+
+      tabData = { lectures };
     } else if (tab === "practice") {
       tabData = {
         practice_lectures: allLectures.filter((l) => l.practices.length > 0).map((l) => ({

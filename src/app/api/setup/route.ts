@@ -91,7 +91,7 @@ export async function POST() {
     // 6. Seed Arabic lectures + practices
     for (const lec of LISAN_LECTURES) {
       const id = `lec_${lec.lecture_number}`;
-      await client.execute({ sql: `INSERT INTO "LisanLecture" ("id","lecture_number","title","duration_seconds") VALUES (?,?,?,?)`, args: [id, lec.lecture_number, lec.title, lec.duration_seconds] });
+      await client.execute({ sql: `INSERT INTO "LisanLecture" ("id","lecture_number","title","youtube_url") VALUES (?,?,?,?)`, args: [id, lec.lecture_number, lec.title, lec.youtube_url] });
       const types = ["identify", "classify", "explain"];
       for (let i = 1; i <= 3; i++) {
         await client.execute({ sql: `INSERT INTO "ArabicPractice" ("id","lecture_id","exercise_number","title","description","exercise_type") VALUES (?,?,?,?,?,?)`, args: [`prac_${lec.lecture_number}_${i}`, id, i, `Exercise ${i}: ${types[i-1].charAt(0).toUpperCase()+types[i-1].slice(1)} task`, `Practice ${types[i-1]} exercise for Lecture ${lec.lecture_number}`, types[i-1]] });

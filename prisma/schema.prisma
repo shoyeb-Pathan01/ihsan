@@ -127,6 +127,7 @@ model LisanLecture {
   id                    String   @id @default(cuid())
   lecture_number        Int
   title                 String
+  youtube_url           String?
   duration_seconds      Int?
   status                String   @default("not_started") // "not_started" | "learning" | "completed"
   // Content pipeline

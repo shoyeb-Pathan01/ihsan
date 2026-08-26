@@ -109,7 +109,6 @@ async function main() {
       data: {
         lecture_number: lecture.lecture_number,
         title: lecture.title,
-        duration_seconds: lecture.duration_seconds,
         status: "not_started",
         // Content pipeline - all false
         watched: false,
