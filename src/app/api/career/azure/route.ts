@@ -1,12 +1,48 @@
 import { prisma } from "@/lib/db";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const VALID_SESSION_STATUSES = ["not_started", "learning", "completed"];
 const VALID_TOPIC_STATUSES = ["not_started", "learning", "mastered"];
 const VALID_PRACTICAL_STATUSES = ["not_started", "completed"];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const sessionId = request.nextUrl.searchParams.get("sessionId");
+
+    // Single session mode (for workspace page)
+    if (sessionId) {
+      const session = await prisma.azureSession.findUnique({ where: { id: sessionId } });
+      if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
+
+      // Get related topics (all topics, since they're shared)
+      const topics = await prisma.goalTopic.findMany({
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, priority: true, status: true },
+      });
+
+      // Get adjacent sessions for navigation
+      const [prevSession, nextSession] = await Promise.all([
+        prisma.azureSession.findFirst({
+          where: { session_number: { lt: session.session_number } },
+          orderBy: { session_number: "desc" },
+          select: { id: true, session_number: true, title: true },
+        }),
+        prisma.azureSession.findFirst({
+          where: { session_number: { gt: session.session_number } },
+          orderBy: { session_number: "asc" },
+          select: { id: true, session_number: true, title: true },
+        }),
+      ]);
+
+      return NextResponse.json({
+        session: { id: session.id, session_number: session.session_number, title: session.title, drive_link: session.drive_link, status: session.status },
+        topics,
+        nextSession,
+        prevSession,
+      });
+    }
+
+    // List mode (for library page)
     const [totalTopics, completedTopics, masteredTopics, totalSessions, completedSessions, totalPracticals, completedPracticals, sessions, practicals, modules] = await Promise.all([
       prisma.goalTopic.count(),
       prisma.goalTopic.count({ where: { status: { not: "not_started" } } }),

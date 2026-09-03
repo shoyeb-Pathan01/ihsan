@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, Briefcase, BookOpen, Moon, BarChart3, Settings } from "lucide-react";
+import { Home, BookOpen, Briefcase, BarChart3, Settings } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/career", label: "Career", icon: Briefcase },
-  { href: "/deen", label: "Qur'an", icon: BookOpen },
-  { href: "/progress", label: "Progress", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/", label: "Today", icon: Home },
+  { href: "/library", label: "Library", icon: BookOpen },
+  { href: "/review", label: "Review", icon: BarChart3 },
 ];
 
 export function Sidebar() {
