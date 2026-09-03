@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Calendar } from "lucide-react";
+import { ArrowRight, Check, Calendar, AlertTriangle } from "lucide-react";
 
 interface TodayData {
   profile: { name: string; mission_start: string; mission_end: string };
@@ -12,12 +12,11 @@ interface TodayData {
   daysRemaining: number;
   now: { type: string; label: string; id: string; done: boolean } | null;
   today3: { type: string; label: string; id: string; done: boolean }[];
-  quickLog: { readingToday: number; tahajjudToday: boolean; memorizationToday: boolean };
+  quickLog: { readingToday: number; tahajjudToday: boolean };
   careerDots: { date: string; active: boolean }[];
   deenDots: { date: string; active: boolean }[];
   careerDaysActive: number;
   deenDaysActive: number;
-  azureStreakRisk: boolean;
   reminder: { text: string; source_type: string; reference: string } | null;
   arabicProgress: number;
   azureProgress: number;
@@ -64,6 +63,11 @@ function getNextWeekDays(): Date[] {
   return days;
 }
 
+function getCompletionPct(completed: number, total: number): number {
+  if (total === 0) return 0;
+  return Math.round((completed / total) * 100);
+}
+
 export default function ReviewPage() {
   const [todayData, setTodayData] = useState<TodayData | null>(null);
 
@@ -73,13 +77,15 @@ export default function ReviewPage() {
     differently: "",
   });
 
-  const [intentions, setIntentions] = useState<{ trigger: string; action: string }[]>([]);
-  const [newTrigger, setNewTrigger] = useState("");
-  const [newAction, setNewAction] = useState("");
+  const [intentions, setIntentions] = useState<{ trigger: string; action: string; time?: string }[]>([]);
+  const [newIntention, setNewIntention] = useState("");
+
+  const [planAdjustment, setPlanAdjustment] = useState<"reduce" | "adjust" | "same" | null>(null);
 
   const now = new Date();
   const weekNum = getWeekNumber(now);
   const { start, end } = getWeekRange(now);
+  const isSunday = now.getDay() === 0;
 
   // Load persisted data from localStorage
   useEffect(() => {
@@ -90,6 +96,7 @@ export default function ReviewPage() {
         const parsed = JSON.parse(saved);
         setReflection(parsed.reflection ?? { wentWell: "", slipped: "", differently: "" });
         setIntentions(parsed.intentions ?? []);
+        setPlanAdjustment(parsed.planAdjustment ?? null);
       }
     } catch {}
   }, [weekNum]);
@@ -98,9 +105,9 @@ export default function ReviewPage() {
   useEffect(() => {
     const savedKey = `iqra-review-${weekNum}`;
     try {
-      localStorage.setItem(savedKey, JSON.stringify({ reflection, intentions }));
+      localStorage.setItem(savedKey, JSON.stringify({ reflection, intentions, planAdjustment }));
     } catch {}
-  }, [reflection, intentions, weekNum]);
+  }, [reflection, intentions, planAdjustment, weekNum]);
 
   useEffect(() => {
     fetch("/api/today")
@@ -120,22 +127,63 @@ export default function ReviewPage() {
     arabicLectures: todayData?.deenDaysActive ?? 0,
     pagesRead: todayData?.quickLog?.readingToday ?? 0,
     tahajjudNights: todayData?.quickLog?.tahajjudToday ? 1 : 0,
-    communicationSessions: 0,
   };
 
-  const suggestedArabic = todayData?.now?.type === "arabic"
-    ? [{ title: todayData.now.label, status: "next" as const }]
-    : todayData?.today3?.filter((t) => t.type === "arabic").map((t) => ({ title: t.label, status: "next" as const })) ?? [];
+  // Honest Mirror calculations
+  const totalPlanned = weeklyStats.azureSessions + weeklyStats.arabicLectures + weeklyStats.tahajjudNights;
+  const completedPct = getCompletionPct(totalPlanned, 7); // 7 = ideal week
 
-  const suggestedAzure = todayData?.today3?.filter((t) => t.type === "azure").map((t) => ({ title: t.label, status: "next" as const })) ?? [];
+  // Easy vs Hard split (passive = reading/watching, active = practice/recall)
+  const passiveTasks = weeklyStats.pagesRead > 0 ? 1 : 0;
+  const activeTasks = weeklyStats.tahajjudNights + weeklyStats.azureSessions;
+  const easyPct = totalPlanned > 0 ? Math.round((passiveTasks / (passiveTasks + activeTasks || 1)) * 100) : 0;
+  const isComfortable = easyPct > 70 && totalPlanned > 0;
 
-  const overdueRevisions: { title: string; daysOverdue: number }[] = [];
+  // Week-over-week deltas (simplified: compare to previous week)
+  const prevWeekKey = `iqra-review-${weekNum - 1}`;
+  let prevWeekStats = { azureSessions: 0, arabicLectures: 0, tahajjudNights: 0 };
+  try {
+    const prev = localStorage.getItem(prevWeekKey);
+    if (prev) {
+      const parsed = JSON.parse(prev);
+      prevWeekStats = parsed.weeklyStats ?? prevWeekStats;
+    }
+  } catch {}
+
+  const deltas = {
+    azure: weeklyStats.azureSessions - prevWeekStats.azureSessions,
+    arabic: weeklyStats.arabicLectures - prevWeekStats.arabicLectures,
+    tahajjud: weeklyStats.tahajjudNights - prevWeekStats.tahajjudNights,
+  };
+
+  // Check for 2-week consecutive <60% completion
+  const prevWeekPct = prevWeekStats.azureSessions + prevWeekStats.arabicLectures + prevWeekStats.tahajjudNights;
+  const prevWeekCompleted = getCompletionPct(prevWeekPct, 7);
+  const needsPlanAdjustment = completedPct < 60 && prevWeekCompleted < 60;
+
+  // Projected finish calculation
+  const daysElapsed = todayData?.dayNumber ?? 1;
+  const totalDays = 131; // Aug 23 to Jan 1
+  const projectedFinish = todayData?.arabicProgress
+    ? Math.round((todayData.arabicProgress / 100) * totalDays)
+    : daysElapsed;
+  const projectedDate = new Date();
+  projectedDate.setDate(projectedDate.getDate() + (totalDays - projectedFinish));
+
+  // Countdown framing
+  const daysRemaining = todayData?.daysRemaining ?? 0;
+  const utilizationPct = totalDays > 0 ? Math.round((daysElapsed / totalDays) * 100) : 0;
 
   function addIntention() {
-    if (!newTrigger.trim() || !newAction.trim()) return;
-    setIntentions((prev) => [...prev, { trigger: newTrigger.trim(), action: newAction.trim() }]);
-    setNewTrigger("");
-    setNewAction("");
+    if (!newIntention.trim()) return;
+    // Parse "Next week main [X] ko [TIME] pe karunga" format
+    const match = newIntention.match(/(?:next week|agle week)\s+main\s+(.+?)\s+ko\s+(.+?)\s+pe\s+(?:karunga|karoongi)/i);
+    if (match) {
+      setIntentions((prev) => [...prev, { trigger: match[1], action: match[2], time: match[2] }]);
+    } else {
+      setIntentions((prev) => [...prev, { trigger: newIntention.trim(), action: "do this" }]);
+    }
+    setNewIntention("");
   }
 
   function removeIntention(index: number) {
@@ -143,37 +191,55 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="review-page animate-fade-in">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <h1>Weekly Review</h1>
-        <Link href="/" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-          Back to Today <ArrowRight size={16} />
+    <div className="review-page animate-fade-in space-y-5">
+      <header className="flex justify-between items-start">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight">Muhāsabah (محاس)</h1>
+          {isSunday && (
+            <p className="text-[12px] text-[var(--color-warning)] mt-1 font-medium">
+              Aaj review ka din hai
+            </p>
+          )}
+        </div>
+        <Link href="/" className="btn-primary">
+          Back <ArrowRight size={16} />
         </Link>
       </header>
 
-      <section className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="eyebrow" style={{ marginBottom: "1rem" }}>
-          <Calendar size={14} /> Week {weekNum} &middot; {formatDate(start)} – {formatDate(end)}
+      {/* Countdown framing */}
+      <section className="card">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[28px] font-extrabold tabular-nums">{daysRemaining}</span>
+            <span className="text-[13px] text-[var(--color-muted)] ml-2">days remaining</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[13px] font-semibold tabular-nums">{utilizationPct}%</span>
+            <span className="text-[12px] text-[var(--color-muted)] ml-1">used well</span>
+          </div>
+        </div>
+        <div className="progress mt-3">
+          <div className="progress-career h-full rounded-full" style={{ width: `${utilizationPct}%` }} />
+        </div>
+      </section>
+
+      {/* Week overview */}
+      <section className="card">
+        <div className="eyebrow mb-3">
+          <Calendar size={14} className="inline mr-1" /> Week {weekNum} · {formatDate(start)} – {formatDate(end)}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <p style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>Career</p>
-            <div className="grid-2" style={{ gridTemplateColumns: "repeat(7, 1fr)", gap: "0.5rem" }}>
+            <p className="text-[13px] font-semibold mb-2 text-[var(--color-career)]">Career</p>
+            <div className="grid grid-cols-7 gap-1">
               {weekDays.map((label, i) => (
-                <div key={`career-${i}`} style={{ textAlign: "center" }}>
-                  <span className="small" style={{ display: "block", marginBottom: "0.25rem", opacity: 0.6 }}>
-                    {label}
-                  </span>
+                <div key={`career-${i}`} className="text-center">
+                  <span className="text-[10px] text-[var(--color-muted)] block mb-1">{label}</span>
                   <span
-                    className={careerDots[i] ? "filled" : "empty"}
+                    className="inline-block w-5 h-5 rounded-full"
                     style={{
-                      display: "inline-block",
-                      width: "12px",
-                      height: "12px",
-                      borderRadius: "50%",
-                      backgroundColor: careerDots[i] ? "#10b981" : "transparent",
-                      border: careerDots[i] ? "none" : "2px solid #555",
+                      backgroundColor: careerDots[i] ? "var(--color-career)" : "var(--color-border)",
                     }}
                   />
                 </div>
@@ -182,22 +248,15 @@ export default function ReviewPage() {
           </div>
 
           <div>
-            <p style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>Deen</p>
-            <div className="grid-2" style={{ gridTemplateColumns: "repeat(7, 1fr)", gap: "0.5rem" }}>
+            <p className="text-[13px] font-semibold mb-2 text-[var(--color-deen)]">Deen</p>
+            <div className="grid grid-cols-7 gap-1">
               {weekDays.map((label, i) => (
-                <div key={`deen-${i}`} style={{ textAlign: "center" }}>
-                  <span className="small" style={{ display: "block", marginBottom: "0.25rem", opacity: 0.6 }}>
-                    {label}
-                  </span>
+                <div key={`deen-${i}`} className="text-center">
+                  <span className="text-[10px] text-[var(--color-muted)] block mb-1">{label}</span>
                   <span
-                    className={deenDots[i] ? "filled" : "empty"}
+                    className="inline-block w-5 h-5 rounded-full"
                     style={{
-                      display: "inline-block",
-                      width: "12px",
-                      height: "12px",
-                      borderRadius: "50%",
-                      backgroundColor: deenDots[i] ? "#10b981" : "transparent",
-                      border: deenDots[i] ? "none" : "2px solid #555",
+                      backgroundColor: deenDots[i] ? "var(--color-deen)" : "var(--color-border)",
                     }}
                   />
                 </div>
@@ -207,17 +266,106 @@ export default function ReviewPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="eyebrow" style={{ marginBottom: "1rem" }}>Muhāsabah</div>
+      {/* Honest Mirror */}
+      <section className="card">
+        <div className="eyebrow mb-3">Honest Mirror</div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="text-center">
+            <span className="text-[24px] font-extrabold tabular-nums" style={{ color: completedPct >= 60 ? "var(--color-success)" : "var(--color-warning)" }}>
+              {completedPct}%
+            </span>
+            <p className="text-[11px] text-[var(--color-muted)]">Tasks done</p>
+          </div>
+          <div className="text-center">
+            <span className="text-[24px] font-extrabold tabular-nums">{weeklyStats.azureSessions}</span>
+            <p className="text-[11px] text-[var(--color-muted)]">Azure</p>
+          </div>
+          <div className="text-center">
+            <span className="text-[24px] font-extrabold tabular-nums">{weeklyStats.arabicLectures}</span>
+            <p className="text-[11px] text-[var(--color-muted)]">Arabic</p>
+          </div>
+        </div>
+
+        {/* Easy vs Hard split */}
+        <div className="mb-3">
+          <div className="flex justify-between mb-1">
+            <span className="text-[11px] text-[var(--color-muted)]">Easy vs Hard</span>
+            <span className="text-[11px] font-semibold tabular-nums">{easyPct}% easy</span>
+          </div>
+          <div className="progress">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${easyPct}%`, backgroundColor: isComfortable ? "var(--color-warning)" : "var(--color-career)" }}
+            />
+          </div>
+        </div>
+
+        {isComfortable && (
+          <div className="flex items-center gap-2 p-3 rounded-lg badge-warning text-[13px]">
+            <AlertTriangle size={14} />
+            You&apos;re comfortable, not growing.
+          </div>
+        )}
+
+        {/* Week-over-week deltas */}
+        <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+          <p className="text-[11px] text-[var(--color-muted)] mb-2">Week-over-week</p>
+          <div className="flex gap-3">
+            {[
+              { label: "Azure", delta: deltas.azure, goal: "career" as const },
+              { label: "Arabic", delta: deltas.arabic, goal: "deen" as const },
+              { label: "Tahajjud", delta: deltas.tahajjud, goal: "deen" as const },
+            ].map((item) => (
+              <span
+                key={item.label}
+                className="text-[11px] font-semibold tabular-nums"
+                style={{ color: item.delta > 0 ? "var(--color-success)" : item.delta < 0 ? "var(--color-danger)" : "var(--color-muted)" }}
+              >
+                {item.label}: {item.delta > 0 ? `+${item.delta}` : item.delta}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Plan adjustment prompt */}
+      {needsPlanAdjustment && !planAdjustment && (
+        <section className="card">
+          <div className="flex items-center gap-3 p-3 rounded-lg badge-warning">
+            <AlertTriangle size={16} />
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold">2 weeks below 60%</p>
+              <p className="text-[11px] text-[var(--color-muted)]">Plan reduce / adjust / same?</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setPlanAdjustment("reduce")} className="btn-secondary text-[11px] px-3 py-1.5">Reduce</button>
+              <button onClick={() => setPlanAdjustment("adjust")} className="btn-secondary text-[11px] px-3 py-1.5">Adjust</button>
+              <button onClick={() => setPlanAdjustment("same")} className="btn-secondary text-[11px] px-3 py-1.5">Same</button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {planAdjustment && (
+        <section className="card">
+          <p className="text-[13px] text-[var(--color-muted)]">
+            {planAdjustment === "reduce" && "Plan reduced. InshAllah, consistency aayegi."}
+            {planAdjustment === "adjust" && "Target adjusted. Realistic goals, honest effort."}
+            {planAdjustment === "same" && "Challenges accept kiye. Allah madad karega."}
+          </p>
+        </section>
+      )}
+
+      {/* Muhāsabah reflection */}
+      <section className="card">
+        <div className="eyebrow mb-3">Self-Accounting</div>
+
+        <div className="space-y-4">
           <div>
-            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-              What went well this week?
-            </label>
+            <label className="text-[13px] font-semibold mb-2 block">What went well?</label>
             <textarea
-              className="card"
-              style={{ width: "100%", minHeight: "80px", resize: "vertical", padding: "0.75rem", fontFamily: "inherit" }}
+              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent"
               value={reflection.wentWell}
               onChange={(e) => setReflection((p) => ({ ...p, wentWell: e.target.value }))}
               placeholder="Celebrate your wins..."
@@ -225,25 +373,19 @@ export default function ReviewPage() {
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-              What slipped?
-            </label>
+            <label className="text-[13px] font-semibold mb-2 block">What slipped?</label>
             <textarea
-              className="card"
-              style={{ width: "100%", minHeight: "80px", resize: "vertical", padding: "0.75rem", fontFamily: "inherit" }}
+              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent"
               value={reflection.slipped}
               onChange={(e) => setReflection((p) => ({ ...p, slipped: e.target.value }))}
-              placeholder="Be honest with yourself..."
+              placeholder="Be honest..."
             />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>
-              What will I do differently?
-            </label>
+            <label className="text-[13px] font-semibold mb-2 block">What differently?</label>
             <textarea
-              className="card"
-              style={{ width: "100%", minHeight: "80px", resize: "vertical", padding: "0.75rem", fontFamily: "inherit" }}
+              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent"
               value={reflection.differently}
               onChange={(e) => setReflection((p) => ({ ...p, differently: e.target.value }))}
               placeholder="Commit to change..."
@@ -252,252 +394,75 @@ export default function ReviewPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="eyebrow" style={{ marginBottom: "1rem" }}>This Week&apos;s Numbers</div>
-
-        <div className="grid-stats" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem" }}>
-          <div className="stat">
-            <span className="stat-label small">Azure Sessions</span>
-            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{weeklyStats.azureSessions}</span>
-            <div className="progress" style={{ marginTop: "0.5rem" }}>
-              <div className="bar" style={{ width: `${Math.min((weeklyStats.azureSessions / 5) * 100, 100)}%` }} />
-            </div>
-          </div>
-
-          <div className="stat">
-            <span className="stat-label small">Arabic Lectures</span>
-            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{weeklyStats.arabicLectures}</span>
-            <div className="progress" style={{ marginTop: "0.5rem" }}>
-              <div className="bar" style={{ width: `${Math.min((weeklyStats.arabicLectures / 7) * 100, 100)}%` }} />
-            </div>
-          </div>
-
-          <div className="stat">
-            <span className="stat-label small">Pages Read</span>
-            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{weeklyStats.pagesRead}</span>
-            <div className="progress" style={{ marginTop: "0.5rem" }}>
-              <div className="bar" style={{ width: `${Math.min((weeklyStats.pagesRead / 50) * 100, 100)}%` }} />
-            </div>
-          </div>
-
-          <div className="stat">
-            <span className="stat-label small">Tahajjud Nights</span>
-            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{weeklyStats.tahajjudNights}</span>
-            <div className="progress" style={{ marginTop: "0.5rem" }}>
-              <div className="bar" style={{ width: `${Math.min((weeklyStats.tahajjudNights / 7) * 100, 100)}%` }} />
-            </div>
-          </div>
-
-          <div className="stat">
-            <span className="stat-label small">Communication</span>
-            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{weeklyStats.communicationSessions}</span>
-            <div className="progress" style={{ marginTop: "0.5rem" }}>
-              <div className="bar" style={{ width: `${Math.min((weeklyStats.communicationSessions / 5) * 100, 100)}%` }} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="eyebrow" style={{ marginBottom: "1rem" }}>Next Week Plan</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
-          <div>
-            <p style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>Arabic Lectures Focus</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {suggestedArabic.map((item, i) => (
-                <div
-                  key={i}
-                  className="badge"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.5rem 0.75rem",
-                    borderRadius: "0.5rem",
-                    backgroundColor: item.status === "next" ? "rgba(16, 185, 129, 0.1)" : "rgba(255, 255, 255, 0.05)",
-                    border: `1px solid ${item.status === "next" ? "rgba(16, 185, 129, 0.3)" : "rgba(255, 255, 255, 0.1)"}`,
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {item.status === "next" && <Check size={14} color="#10b981" />}
-                  {item.title}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>Azure Sessions Focus</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {suggestedAzure.map((item, i) => (
-                <div
-                  key={i}
-                  className="badge"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.5rem 0.75rem",
-                    borderRadius: "0.5rem",
-                    backgroundColor: item.status === "next" ? "rgba(59, 130, 246, 0.1)" : "rgba(255, 255, 255, 0.05)",
-                    border: `1px solid ${item.status === "next" ? "rgba(59, 130, 246, 0.3)" : "rgba(255, 255, 255, 0.1)"}`,
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {item.status === "next" && <Check size={14} color="#3b82f6" />}
-                  {item.title}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.75rem" }}>Overdue Revisions</p>
-            {overdueRevisions.length === 0 ? (
-              <p className="empty" style={{ fontSize: "0.875rem", opacity: 0.6 }}>
-                All revisions up to date
-              </p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {overdueRevisions.map((item, i) => (
-                  <div
-                    key={i}
-                    className="badge"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      padding: "0.5rem 0.75rem",
-                      borderRadius: "0.5rem",
-                      backgroundColor: "rgba(239, 68, 68, 0.1)",
-                      border: "1px solid rgba(239, 68, 68, 0.3)",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    <span style={{ color: "#ef4444", fontWeight: 600 }}>{item.daysOverdue}d overdue</span>
-                    {item.title}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ marginTop: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "1rem" }}>
-          <p style={{ fontSize: "0.875rem", fontWeight: 600, marginBottom: "0.5rem" }}>Suggested Focus Days</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.5rem" }}>
-            {nextWeekDays.map((day, i) => (
-              <div
-                key={i}
-                style={{
-                  textAlign: "center",
-                  padding: "0.5rem 0.25rem",
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
-                }}
-              >
-                <span className="small" style={{ display: "block", opacity: 0.6 }}>
-                  {day.toLocaleDateString("en-US", { weekday: "short" })}
-                </span>
-                <span className="small" style={{ fontWeight: 600 }}>
-                  {day.getDate()}
-                </span>
-                <span
-                  className="small"
-                  style={{
-                    display: "block",
-                    marginTop: "0.25rem",
-                    fontSize: "0.7rem",
-                    color: i < 4 ? "#10b981" : "#f59e0b",
-                  }}
-                >
-                  {i < 4 ? "Study" : "Review"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      {/* Implementation intentions */}
       <section className="card">
-        <div className="eyebrow" style={{ marginBottom: "1rem" }}>Implementation Intentions</div>
-        <p style={{ fontSize: "0.875rem", opacity: 0.7, marginBottom: "1rem" }}>
-          &quot;When X happens, I will Y&quot; — pre-commit to your responses
+        <div className="eyebrow mb-1">Implementation Intentions</div>
+        <p className="text-[11px] text-[var(--color-muted)] mb-3">
+          &quot;Next week main [X] ko [TIME] pe karunga&quot;
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr auto", gap: "0.75rem", alignItems: "end", marginBottom: "1.25rem" }}>
-          <div>
-            <label className="small" style={{ display: "block", marginBottom: "0.25rem" }}>When...</label>
-            <input
-              className="card"
-              style={{ width: "100%", padding: "0.5rem 0.75rem", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "0.5rem", fontFamily: "inherit", fontSize: "0.875rem" }}
-              value={newTrigger}
-              onChange={(e) => setNewTrigger(e.target.value)}
-              placeholder="e.g. I feel urge to skip Tahajjud"
-              onKeyDown={(e) => e.key === "Enter" && addIntention()}
-            />
-          </div>
-          <span className="small" style={{ paddingBottom: "0.5rem", opacity: 0.5 }}>→</span>
-          <div>
-            <label className="small" style={{ display: "block", marginBottom: "0.25rem" }}>I will...</label>
-            <input
-              className="card"
-              style={{ width: "100%", padding: "0.5rem 0.75rem", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "0.5rem", fontFamily: "inherit", fontSize: "0.875rem" }}
-              value={newAction}
-              onChange={(e) => setNewAction(e.target.value)}
-              placeholder="e.g. Pray 2 rakaat then reassess"
-              onKeyDown={(e) => e.key === "Enter" && addIntention()}
-            />
-          </div>
-          <button className="btn-primary" onClick={addIntention} style={{ padding: "0.5rem 1rem", whiteSpace: "nowrap" }}>
-            Add
-          </button>
+        <div className="flex gap-2 mb-4">
+          <input
+            className="flex-1 search-input"
+            value={newIntention}
+            onChange={(e) => setNewIntention(e.target.value)}
+            placeholder="Next week main Quran ko 6 AM pe karunga"
+            onKeyDown={(e) => e.key === "Enter" && addIntention()}
+          />
+          <button className="btn-primary px-4" onClick={addIntention}>Add</button>
         </div>
 
         {intentions.length === 0 ? (
-          <p className="empty" style={{ fontSize: "0.875rem", opacity: 0.6 }}>
-            No intentions yet — build your pre-commitments above
-          </p>
+          <p className="text-[13px] text-[var(--color-muted)] text-center py-6">No intentions yet.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <div className="space-y-2">
             {intentions.map((item, i) => (
-              <div
-                key={i}
-                className="badge"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "0.5rem",
-                  backgroundColor: "rgba(16, 185, 129, 0.08)",
-                  border: "1px solid rgba(16, 185, 129, 0.2)",
-                  fontSize: "0.875rem",
-                }}
-              >
-                <span>
-                  When <strong>{item.trigger}</strong>, I will <strong>{item.action}</strong>
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-surface-elevated)]">
+                <span className="text-[13px]">
+                  Main <strong>{item.trigger}</strong> ko <strong>{item.action || item.time}</strong> pe karunga
                 </span>
-                <button
-                  onClick={() => removeIntention(i)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#ef4444",
-                    cursor: "pointer",
-                    fontSize: "0.75rem",
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: "0.25rem",
-                  }}
-                >
+                <button onClick={() => removeIntention(i)} className="text-[11px] text-[var(--color-danger)] font-medium">
                   Remove
                 </button>
               </div>
             ))}
           </div>
         )}
+      </section>
+
+      {/* Projected finish */}
+      <section className="card">
+        <div className="eyebrow mb-3">Projection</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[11px] text-[var(--color-muted)]">Lisan Book finishes by</p>
+            <p className="text-[15px] font-bold">
+              {projectedDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] text-[var(--color-muted)]">Arabic mastery</p>
+            <p className="text-[15px] font-bold tabular-nums">{todayData?.arabicProgress ?? 0}%</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Next week plan */}
+      <section className="card">
+        <div className="eyebrow mb-3">Next Week</div>
+        <div className="grid grid-cols-7 gap-1">
+          {nextWeekDays.map((day, i) => (
+            <div key={i} className="text-center p-2 rounded-lg bg-[var(--color-surface-elevated)]">
+              <span className="text-[10px] text-[var(--color-muted)] block">
+                {day.toLocaleDateString("en-US", { weekday: "short" })}
+              </span>
+              <span className="text-[12px] font-semibold">{day.getDate()}</span>
+              <span className="text-[9px] block mt-0.5" style={{ color: i < 4 ? "var(--color-deen)" : "var(--color-warning)" }}>
+                {i < 4 ? "Study" : "Review"}
+              </span>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

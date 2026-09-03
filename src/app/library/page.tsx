@@ -429,7 +429,7 @@ export default function LibraryPage() {
           placeholder="Search lectures..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg border border-[#dfe3ea] focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/10 outline-none"
+          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg search-input"
         />
       </div>
 
@@ -531,7 +531,7 @@ export default function LibraryPage() {
           placeholder="Search sessions..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg border border-[#dfe3ea] focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/10 outline-none"
+          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg search-input"
         />
       </div>
 
@@ -1125,12 +1125,13 @@ export default function LibraryPage() {
   };
 
   return (
-    <div>
-      <div className="tabs" style={{ marginBottom: "1.5rem" }}>
+    <div className="animate-fade-in space-y-5">
+      <h1 className="text-[26px] font-bold tracking-tight">Library</h1>
+      <div className="tabs">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            className={`btn-secondary ${activeTab === tab.id ? "check" : ""}`}
+            className={activeTab === tab.id ? "active" : ""}
             onClick={() => setActiveTab(tab.id)}
           >
             {tab.icon}

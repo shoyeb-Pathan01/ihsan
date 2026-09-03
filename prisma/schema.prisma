@@ -13,6 +13,7 @@ model Profile {
   mission_start     String   @default("2026-08-23")
   mission_end       String   @default("2027-01-01")
   theme             String   @default("dark")
+  schedule          String?  // JSON: { azureBlock, arabicBlock, mvd }
   baseline_azure    Int?     // 1-5
   baseline_arabic   Int?     // 1-5
   baseline_comm     Int?     // 1-5
@@ -186,17 +187,19 @@ model ArabicPractice {
 }
 
 model ArabicRevision {
-  id                String   @id @default(cuid())
-  lecture_id        String
-  date              String   // YYYY-MM-DD
-  understanding     Int      // 1-5
-  confidence        Int      // 1-5
-  struggles         String?
-  next_revision_date String? // YYYY-MM-DD
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  lecture_id          String
+  date                String   // YYYY-MM-DD
+  understanding       Int      // 1-5
+  confidence          Int      // 1-5
+  struggles           String?
+  next_revision_date  String?  // YYYY-MM-DD
+  interval_level      Int      @default(1) // 1=3d, 2=7d, 3=14d, 4=30d, 5=45d
+  last_recall_result  String?  // "pass" | "fail"
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 
-  lecture           LisanLecture @relation(fields: [lecture_id], references: [id])
+  lecture             LisanLecture @relation(fields: [lecture_id], references: [id])
 }
 
 model ArabicNote {
