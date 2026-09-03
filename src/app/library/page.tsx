@@ -48,10 +48,11 @@ interface ArabicLecture {
 }
 
 interface AzureSession {
-  id: number;
-  session: string;
+  id: string;
+  session_number: number;
+  title: string;
+  drive_link: string;
   status: string;
-  link: string;
 }
 
 interface ReadingData {
@@ -169,7 +170,7 @@ export default function LibraryPage() {
     try {
       const res = await fetch("/api/career/azure");
       const data = await res.json();
-      setAzureSessions(data.sessions ?? data ?? []);
+      setAzureSessions(data.sessions ?? []);
     } catch {
       setAzureSessions([]);
     } finally {
@@ -403,92 +404,67 @@ export default function LibraryPage() {
       : arabicLectures;
 
     return (
-    <div className="animate-fade-in">
-      <div className="grid-stats" style={{ marginBottom: "1.5rem" }}>
-        <div className="stat">
-          <div className="stat-label">Total Lectures</div>
-          <div className="small">{arabicLectures.length}</div>
+    <div className="animate-fade-in space-y-5">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="card text-center">
+          <p className="text-[11px] text-[var(--color-muted)]">Total</p>
+          <p className="text-[24px] font-extrabold tabular-nums">{arabicLectures.length}</p>
         </div>
-        <div className="stat">
-          <div className="stat-label">Completed</div>
-          <div className="small">
-            {arabicLectures.filter((l) => l.status === "completed").length}
-          </div>
+        <div className="card text-center">
+          <p className="text-[11px] text-[var(--color-muted)]">Completed</p>
+          <p className="text-[24px] font-extrabold tabular-nums">{arabicLectures.filter((l) => l.status === "completed").length}</p>
         </div>
-        <div className="stat">
-          <div className="stat-label">Remaining</div>
-          <div className="small">
-            {arabicLectures.filter((l) => l.status !== "completed").length}
-          </div>
+        <div className="card text-center">
+          <p className="text-[11px] text-[var(--color-muted)]">Remaining</p>
+          <p className="text-[24px] font-extrabold tabular-nums">{arabicLectures.filter((l) => l.status !== "completed").length}</p>
         </div>
       </div>
 
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search lectures..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg search-input"
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Search lectures..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="search-input"
+      />
 
       {loading ? (
-        <p className="small">Loading...</p>
+        <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
       ) : filtered.length === 0 ? (
-        <p className="empty">No lectures found.</p>
+        <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No lectures found.</p>
       ) : (
-        <div className="table">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Lecture</th>
-                <th>Status</th>
-                <th>YouTube</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((lecture, index) => (
-                <tr key={lecture.id}>
-                  <td>{index + 1}</td>
-                  <td>{lecture.lecture}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        lecture.status === "completed" ? "check" : ""
-                      }`}
-                    >
-                      {lecture.status === "completed" && <Check size={14} />}
-                      {lecture.status}
-                    </span>
-                  </td>
-                  <td>
-                    {lecture.youtube ? (
-                      <a
-                        href={lecture.youtube}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink size={14} />
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td>
-                    <Link
-                      href={`/arabic/${lecture.id}`}
-                      className="btn-secondary"
-                    >
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {filtered.map((lecture) => (
+            <div key={lecture.id} className="card card-deen flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-8 text-right shrink-0">
+                  {lecture.id}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium truncate">{lecture.lecture}</p>
+                  <span className="text-[11px] text-[var(--color-muted)] capitalize">{lecture.status}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {lecture.youtube && (
+                  <a
+                    href={lecture.youtube}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-muted)] hover:text-[var(--color-deen)]"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+                <Link
+                  href={`/arabic/${lecture.id}`}
+                  className="btn-secondary text-[12px] px-3 py-1.5"
+                >
+                  Open
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -498,99 +474,74 @@ export default function LibraryPage() {
   const renderAzure = () => {
     const filtered = searchQuery
       ? azureSessions.filter((s) =>
-          s.session.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          String(s.id).includes(searchQuery) ||
+          s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(s.session_number).includes(searchQuery) ||
           s.status.toLowerCase().includes(searchQuery.toLowerCase())
         )
       : azureSessions;
 
     return (
-    <div className="animate-fade-in">
-      <div className="grid-stats" style={{ marginBottom: "1.5rem" }}>
-        <div className="stat">
-          <div className="stat-label">Total Sessions</div>
-          <div className="small">{azureSessions.length}</div>
+    <div className="animate-fade-in space-y-5">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="card text-center">
+          <p className="text-[11px] text-[var(--color-muted)]">Total</p>
+          <p className="text-[24px] font-extrabold tabular-nums">{azureSessions.length}</p>
         </div>
-        <div className="stat">
-          <div className="stat-label">Completed</div>
-          <div className="small">
-            {azureSessions.filter((s) => s.status === "completed").length}
-          </div>
+        <div className="card text-center">
+          <p className="text-[11px] text-[var(--color-muted)]">Completed</p>
+          <p className="text-[24px] font-extrabold tabular-nums">{azureSessions.filter((s) => s.status === "completed").length}</p>
         </div>
-        <div className="stat">
-          <div className="stat-label">Remaining</div>
-          <div className="small">
-            {azureSessions.filter((s) => s.status !== "completed").length}
-          </div>
+        <div className="card text-center">
+          <p className="text-[11px] text-[var(--color-muted)]">Remaining</p>
+          <p className="text-[24px] font-extrabold tabular-nums">{azureSessions.filter((s) => s.status !== "completed").length}</p>
         </div>
       </div>
 
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search sessions..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg search-input"
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Search sessions..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="search-input"
+      />
 
       {loading ? (
-        <p className="small">Loading...</p>
+        <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
       ) : filtered.length === 0 ? (
-        <p className="empty">No sessions found.</p>
+        <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No sessions found.</p>
       ) : (
-        <div className="table">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Session</th>
-                <th>Status</th>
-                <th>Link</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((session, index) => (
-                <tr key={session.id}>
-                  <td>{index + 1}</td>
-                  <td>{session.session}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        session.status === "completed" ? "check" : ""
-                      }`}
-                    >
-                      {session.status === "completed" && <Check size={14} />}
-                      {session.status}
-                    </span>
-                  </td>
-                  <td>
-                    {session.link ? (
-                      <a
-                        href={session.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink size={14} />
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td>
-                    <Link
-                      href={`/azure/${session.id}`}
-                      className="btn-secondary"
-                    >
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {filtered.map((session) => (
+            <div key={session.id} className="card flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-8 text-right shrink-0">
+                  {session.session_number}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium truncate">{session.title}</p>
+                  <span className="text-[11px] text-[var(--color-muted)] capitalize">{session.status.replace("_", " ")}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {session.drive_link && (
+                  <a
+                    href={session.drive_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-muted)] hover:text-[var(--color-career)]"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+                <Link
+                  href={`/azure/${session.id}`}
+                  className="btn-secondary text-[12px] px-3 py-1.5"
+                >
+                  Open
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
