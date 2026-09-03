@@ -98,6 +98,7 @@ interface SettingsData {
 
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState<TabId>("arabic");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Arabic
   const [arabicLectures, setArabicLectures] = useState<ArabicLecture[]>([]);
@@ -271,6 +272,7 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
+    setSearchQuery("");
     switch (activeTab) {
       case "arabic":
         fetchArabic();
@@ -391,7 +393,16 @@ export default function LibraryPage() {
 
   // --- Render helpers ---
 
-  const renderArabic = () => (
+  const renderArabic = () => {
+    const filtered = searchQuery
+      ? arabicLectures.filter((l) =>
+          l.lecture.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(l.id).includes(searchQuery) ||
+          l.status.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : arabicLectures;
+
+    return (
     <div className="animate-fade-in">
       <div className="grid-stats" style={{ marginBottom: "1.5rem" }}>
         <div className="stat">
@@ -412,9 +423,19 @@ export default function LibraryPage() {
         </div>
       </div>
 
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search lectures..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg border border-[#dfe3ea] focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/10 outline-none"
+        />
+      </div>
+
       {loading ? (
         <p className="small">Loading...</p>
-      ) : arabicLectures.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <p className="empty">No lectures found.</p>
       ) : (
         <div className="table">
@@ -429,7 +450,7 @@ export default function LibraryPage() {
               </tr>
             </thead>
             <tbody>
-              {arabicLectures.map((lecture, index) => (
+              {filtered.map((lecture, index) => (
                 <tr key={lecture.id}>
                   <td>{index + 1}</td>
                   <td>{lecture.lecture}</td>
@@ -472,8 +493,18 @@ export default function LibraryPage() {
       )}
     </div>
   );
+  };
 
-  const renderAzure = () => (
+  const renderAzure = () => {
+    const filtered = searchQuery
+      ? azureSessions.filter((s) =>
+          s.session.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(s.id).includes(searchQuery) ||
+          s.status.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : azureSessions;
+
+    return (
     <div className="animate-fade-in">
       <div className="grid-stats" style={{ marginBottom: "1.5rem" }}>
         <div className="stat">
@@ -494,9 +525,19 @@ export default function LibraryPage() {
         </div>
       </div>
 
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search sessions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full max-w-sm text-[13px] px-3 py-2 rounded-lg border border-[#dfe3ea] focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/10 outline-none"
+        />
+      </div>
+
       {loading ? (
         <p className="small">Loading...</p>
-      ) : azureSessions.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <p className="empty">No sessions found.</p>
       ) : (
         <div className="table">
@@ -511,7 +552,7 @@ export default function LibraryPage() {
               </tr>
             </thead>
             <tbody>
-              {azureSessions.map((session, index) => (
+              {filtered.map((session, index) => (
                 <tr key={session.id}>
                   <td>{index + 1}</td>
                   <td>{session.session}</td>
@@ -554,6 +595,7 @@ export default function LibraryPage() {
       )}
     </div>
   );
+  };
 
   const renderReading = () => {
     const progressPct =

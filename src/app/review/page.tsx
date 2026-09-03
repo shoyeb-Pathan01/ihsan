@@ -5,14 +5,23 @@ import Link from "next/link";
 import { ArrowRight, Check, Calendar } from "lucide-react";
 
 interface TodayData {
-  career: { lectures: number; sessions: number; azureSessions: number };
-  deen: {
-    arabicLectures: number;
-    pagestabsread: number;
-    tahajjudNights: number;
-    communicationSessions: number;
-  };
-  readings: { alhikam: { read: boolean }; yaqeen: { read: boolean } };
+  profile: { name: string; mission_start: string; mission_end: string };
+  dayNumber: number;
+  dayOfWeek: string;
+  sprint: number;
+  daysRemaining: number;
+  now: { type: string; label: string; id: string; done: boolean } | null;
+  today3: { type: string; label: string; id: string; done: boolean }[];
+  quickLog: { readingToday: number; tahajjudToday: boolean; memorizationToday: boolean };
+  careerDots: { date: string; active: boolean }[];
+  deenDots: { date: string; active: boolean }[];
+  careerDaysActive: number;
+  deenDaysActive: number;
+  azureStreakRisk: boolean;
+  reminder: { text: string; source_type: string; reference: string } | null;
+  arabicProgress: number;
+  azureProgress: number;
+  allDone: boolean;
 }
 
 function getWeekNumber(date: Date): number {
@@ -72,6 +81,27 @@ export default function ReviewPage() {
   const weekNum = getWeekNumber(now);
   const { start, end } = getWeekRange(now);
 
+  // Load persisted data from localStorage
+  useEffect(() => {
+    const savedKey = `iqra-review-${weekNum}`;
+    try {
+      const saved = localStorage.getItem(savedKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setReflection(parsed.reflection ?? { wentWell: "", slipped: "", differently: "" });
+        setIntentions(parsed.intentions ?? []);
+      }
+    } catch {}
+  }, [weekNum]);
+
+  // Persist to localStorage on change
+  useEffect(() => {
+    const savedKey = `iqra-review-${weekNum}`;
+    try {
+      localStorage.setItem(savedKey, JSON.stringify({ reflection, intentions }));
+    } catch {}
+  }, [reflection, intentions, weekNum]);
+
   useEffect(() => {
     fetch("/api/today")
       .then((r) => r.json())
@@ -82,40 +112,24 @@ export default function ReviewPage() {
   const weekDays = ["M", "T", "W", "T", "F", "S", "S"];
   const nextWeekDays = getNextWeekDays();
 
-  const careerDots = [true, true, true, true, true, false, false];
-  const deenDots = [true, false, true, true, false, false, true];
+  const careerDots = todayData?.careerDots?.map((d) => d.active) ?? [false, false, false, false, false, false, false];
+  const deenDots = todayData?.deenDots?.map((d) => d.active) ?? [false, false, false, false, false, false, false];
 
   const weeklyStats = {
-    azureSessions: todayData?.career?.azureSessions ?? 0,
-    arabicLectures: todayData?.deen?.arabicLectures ?? 0,
-    pagesRead: todayData?.deen?.pagestabsread ?? 0,
-    tahajjudNights: todayData?.deen?.tahajjudNights ?? 0,
-    communicationSessions: todayData?.deen?.communicationSessions ?? 0,
+    azureSessions: todayData?.careerDaysActive ?? 0,
+    arabicLectures: todayData?.deenDaysActive ?? 0,
+    pagesRead: todayData?.quickLog?.readingToday ?? 0,
+    tahajjudNights: todayData?.quickLog?.tahajjudToday ? 1 : 0,
+    communicationSessions: 0,
   };
 
-  const suggestedArabic = [
-    { title: "Arabic Lecture 4", status: "next" },
-    { title: "Arabic Lecture 5", status: "next" },
-    { title: "Arabic Lecture 6", status: "next" },
-    { title: "Arabic Lecture 7", status: "upcoming" },
-  ];
+  const suggestedArabic = todayData?.now?.type === "arabic"
+    ? [{ title: todayData.now.label, status: "next" as const }]
+    : todayData?.today3?.filter((t) => t.type === "arabic").map((t) => ({ title: t.label, status: "next" as const })) ?? [];
 
-  const suggestedAzure = [
-    { title: "Azure Session 3", status: "next" },
-    { title: "Azure Session 4", status: "next" },
-    { title: "Azure Session 5", status: "upcoming" },
-  ];
+  const suggestedAzure = todayData?.today3?.filter((t) => t.type === "azure").map((t) => ({ title: t.label, status: "next" as const })) ?? [];
 
-  const overdueRevisions = todayData?.readings
-    ? [
-        ...(!todayData.readings.alhikam.read
-          ? [{ title: "Al-Hikam reading revision", daysOverdue: 3 }]
-          : []),
-        ...(!todayData.readings.yaqeen.read
-          ? [{ title: "Yaqeen reading revision", daysOverdue: 1 }]
-          : []),
-      ]
-    : [];
+  const overdueRevisions: { title: string; daysOverdue: number }[] = [];
 
   function addIntention() {
     if (!newTrigger.trim() || !newAction.trim()) return;
@@ -132,7 +146,7 @@ export default function ReviewPage() {
     <div className="review-page animate-fade-in">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <h1>Weekly Review</h1>
-        <Link href="/today" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+        <Link href="/" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
           Back to Today <ArrowRight size={16} />
         </Link>
       </header>

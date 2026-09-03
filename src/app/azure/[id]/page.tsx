@@ -36,6 +36,19 @@ export default function AzureWorkspacePage({ params }: { params: Promise<{ id: s
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const markStageStatus = async (status: string) => {
+    if (!data?.session) return;
+    setSaving(true);
+    try {
+      await fetch("/api/career/azure", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "session", id: data.session.id, status }),
+      });
+      setData((prev) => prev ? { ...prev, session: prev.session ? { ...prev.session, status } : null } : null);
+    } catch {} finally { setSaving(false); }
+  };
+
   const markComplete = async () => {
     if (!data?.session) return;
     setSaving(true);
@@ -114,11 +127,15 @@ export default function AzureWorkspacePage({ params }: { params: Promise<{ id: s
           const isPast = ["mastered", "revised", "practiced", "learning", "not_started"].indexOf(session.status) > i;
           return (
             <div key={s.key} className="flex items-center gap-1">
-              <span className={`px-3 py-1.5 rounded-full text-[12px] font-medium ${
-                isActive ? "bg-[#635bff] text-white" : isPast ? "bg-[#dcfce7] text-[#166534]" : "bg-[#f6f7fb] text-[#6b7280]"
-              }`}>
+              <button
+                onClick={() => markStageStatus(s.key)}
+                disabled={saving}
+                className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
+                  isActive ? "bg-[#635bff] text-white" : isPast ? "bg-[#dcfce7] text-[#166534]" : "bg-[#f6f7fb] text-[#6b7280] hover:border-[#635bff]"
+                }`}
+              >
                 {isPast && !isActive ? "✓ " : ""}{s.label}
-              </span>
+              </button>
               {i < 4 && <span className="text-[#dfe3ea]">→</span>}
             </div>
           );
