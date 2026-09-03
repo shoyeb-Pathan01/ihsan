@@ -16,7 +16,7 @@ export function Sidebar() {
   const isSunday = new Date().getDay() === 0;
 
   return (
-    <aside className="hidden lg:flex flex-col w-[220px] bg-[var(--color-surface)] border-r border-[var(--color-border)] px-3 py-6 sticky top-0 h-screen">
+    <aside className="hidden lg:flex flex-col w-[200px] xl:w-[220px] bg-[var(--color-surface)] border-r border-[var(--color-border)] px-3 py-5 sticky top-0 h-screen shrink-0">
       <div className="font-extrabold text-lg px-3 pb-8 tracking-tight">
         <span className="text-[var(--color-career)]">IQ</span>
         <span className="text-[var(--color-deen)]">RA</span>

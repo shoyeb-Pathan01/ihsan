@@ -28,12 +28,7 @@ function getWeekNumber(date: Date): number {
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
   const week1 = new Date(d.getFullYear(), 0, 4);
-  return (
-    1 +
-    Math.round(
-      ((d.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7
-    )
-  );
+  return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
 }
 
 function getWeekRange(date: Date): { start: Date; end: Date } {
@@ -87,7 +82,6 @@ export default function ReviewPage() {
   const { start, end } = getWeekRange(now);
   const isSunday = now.getDay() === 0;
 
-  // Load persisted data from localStorage
   useEffect(() => {
     const savedKey = `iqra-review-${weekNum}`;
     try {
@@ -101,7 +95,6 @@ export default function ReviewPage() {
     } catch {}
   }, [weekNum]);
 
-  // Persist to localStorage on change
   useEffect(() => {
     const savedKey = `iqra-review-${weekNum}`;
     try {
@@ -129,17 +122,14 @@ export default function ReviewPage() {
     tahajjudNights: todayData?.quickLog?.tahajjudToday ? 1 : 0,
   };
 
-  // Honest Mirror calculations
   const totalPlanned = weeklyStats.azureSessions + weeklyStats.arabicLectures + weeklyStats.tahajjudNights;
-  const completedPct = getCompletionPct(totalPlanned, 7); // 7 = ideal week
+  const completedPct = getCompletionPct(totalPlanned, 7);
 
-  // Easy vs Hard split (passive = reading/watching, active = practice/recall)
   const passiveTasks = weeklyStats.pagesRead > 0 ? 1 : 0;
   const activeTasks = weeklyStats.tahajjudNights + weeklyStats.azureSessions;
   const easyPct = totalPlanned > 0 ? Math.round((passiveTasks / (passiveTasks + activeTasks || 1)) * 100) : 0;
   const isComfortable = easyPct > 70 && totalPlanned > 0;
 
-  // Week-over-week deltas (simplified: compare to previous week)
   const prevWeekKey = `iqra-review-${weekNum - 1}`;
   let prevWeekStats = { azureSessions: 0, arabicLectures: 0, tahajjudNights: 0 };
   try {
@@ -156,27 +146,21 @@ export default function ReviewPage() {
     tahajjud: weeklyStats.tahajjudNights - prevWeekStats.tahajjudNights,
   };
 
-  // Check for 2-week consecutive <60% completion
   const prevWeekPct = prevWeekStats.azureSessions + prevWeekStats.arabicLectures + prevWeekStats.tahajjudNights;
   const prevWeekCompleted = getCompletionPct(prevWeekPct, 7);
   const needsPlanAdjustment = completedPct < 60 && prevWeekCompleted < 60;
 
-  // Projected finish calculation
   const daysElapsed = todayData?.dayNumber ?? 1;
-  const totalDays = 131; // Aug 23 to Jan 1
-  const projectedFinish = todayData?.arabicProgress
-    ? Math.round((todayData.arabicProgress / 100) * totalDays)
-    : daysElapsed;
+  const totalDays = 131;
+  const projectedFinish = todayData?.arabicProgress ? Math.round((todayData.arabicProgress / 100) * totalDays) : daysElapsed;
   const projectedDate = new Date();
   projectedDate.setDate(projectedDate.getDate() + (totalDays - projectedFinish));
 
-  // Countdown framing
   const daysRemaining = todayData?.daysRemaining ?? 0;
   const utilizationPct = totalDays > 0 ? Math.round((daysElapsed / totalDays) * 100) : 0;
 
   function addIntention() {
     if (!newIntention.trim()) return;
-    // Parse "Next week main [X] ko [TIME] pe karunga" format
     const match = newIntention.match(/(?:next week|agle week)\s+main\s+(.+?)\s+ko\s+(.+?)\s+pe\s+(?:karunga|karoongi)/i);
     if (match) {
       setIntentions((prev) => [...prev, { trigger: match[1], action: match[2], time: match[2] }]);
@@ -192,16 +176,17 @@ export default function ReviewPage() {
 
   return (
     <div className="review-page animate-fade-in space-y-5">
-      <header className="flex justify-between items-start">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Muhāsabah (محاس)</h1>
+      {/* Header */}
+      <header className="flex justify-between items-start gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[22px] sm:text-[26px] font-bold tracking-tight">Muhāsabah (محاس)</h1>
           {isSunday && (
-            <p className="text-[12px] text-[var(--color-warning)] mt-1 font-medium">
+            <p className="text-[11px] sm:text-[12px] text-[var(--color-warning)] mt-1 font-medium">
               Aaj review ka din hai
             </p>
           )}
         </div>
-        <Link href="/" className="btn-primary">
+        <Link href="/" className="btn-primary text-[13px] shrink-0">
           Back <ArrowRight size={16} />
         </Link>
       </header>
@@ -210,12 +195,12 @@ export default function ReviewPage() {
       <section className="card">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[28px] font-extrabold tabular-nums">{daysRemaining}</span>
-            <span className="text-[13px] text-[var(--color-muted)] ml-2">days remaining</span>
+            <span className="text-[24px] sm:text-[28px] font-extrabold tabular-nums">{daysRemaining}</span>
+            <span className="text-[12px] sm:text-[13px] text-[var(--color-muted)] ml-2">days left</span>
           </div>
           <div className="text-right">
             <span className="text-[13px] font-semibold tabular-nums">{utilizationPct}%</span>
-            <span className="text-[12px] text-[var(--color-muted)] ml-1">used well</span>
+            <span className="text-[11px] sm:text-[12px] text-[var(--color-muted)] ml-1">used well</span>
           </div>
         </div>
         <div className="progress mt-3">
@@ -235,12 +220,10 @@ export default function ReviewPage() {
             <div className="grid grid-cols-7 gap-1">
               {weekDays.map((label, i) => (
                 <div key={`career-${i}`} className="text-center">
-                  <span className="text-[10px] text-[var(--color-muted)] block mb-1">{label}</span>
+                  <span className="text-[9px] sm:text-[10px] text-[var(--color-muted)] block mb-1">{label}</span>
                   <span
-                    className="inline-block w-5 h-5 rounded-full"
-                    style={{
-                      backgroundColor: careerDots[i] ? "var(--color-career)" : "var(--color-border)",
-                    }}
+                    className="inline-block w-4 h-4 sm:w-5 sm:h-5 rounded-full"
+                    style={{ backgroundColor: careerDots[i] ? "var(--color-career)" : "var(--color-border)" }}
                   />
                 </div>
               ))}
@@ -252,12 +235,10 @@ export default function ReviewPage() {
             <div className="grid grid-cols-7 gap-1">
               {weekDays.map((label, i) => (
                 <div key={`deen-${i}`} className="text-center">
-                  <span className="text-[10px] text-[var(--color-muted)] block mb-1">{label}</span>
+                  <span className="text-[9px] sm:text-[10px] text-[var(--color-muted)] block mb-1">{label}</span>
                   <span
-                    className="inline-block w-5 h-5 rounded-full"
-                    style={{
-                      backgroundColor: deenDots[i] ? "var(--color-deen)" : "var(--color-border)",
-                    }}
+                    className="inline-block w-4 h-4 sm:w-5 sm:h-5 rounded-full"
+                    style={{ backgroundColor: deenDots[i] ? "var(--color-deen)" : "var(--color-border)" }}
                   />
                 </div>
               ))}
@@ -270,20 +251,20 @@ export default function ReviewPage() {
       <section className="card">
         <div className="eyebrow mb-3">Honest Mirror</div>
 
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
           <div className="text-center">
-            <span className="text-[24px] font-extrabold tabular-nums" style={{ color: completedPct >= 60 ? "var(--color-success)" : "var(--color-warning)" }}>
+            <span className="text-[20px] sm:text-[24px] font-extrabold tabular-nums" style={{ color: completedPct >= 60 ? "var(--color-success)" : "var(--color-warning)" }}>
               {completedPct}%
             </span>
-            <p className="text-[11px] text-[var(--color-muted)]">Tasks done</p>
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-muted)]">Tasks done</p>
           </div>
           <div className="text-center">
-            <span className="text-[24px] font-extrabold tabular-nums">{weeklyStats.azureSessions}</span>
-            <p className="text-[11px] text-[var(--color-muted)]">Azure</p>
+            <span className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{weeklyStats.azureSessions}</span>
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-muted)]">Azure</p>
           </div>
           <div className="text-center">
-            <span className="text-[24px] font-extrabold tabular-nums">{weeklyStats.arabicLectures}</span>
-            <p className="text-[11px] text-[var(--color-muted)]">Arabic</p>
+            <span className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{weeklyStats.arabicLectures}</span>
+            <p className="text-[10px] sm:text-[11px] text-[var(--color-muted)]">Arabic</p>
           </div>
         </div>
 
@@ -303,7 +284,7 @@ export default function ReviewPage() {
 
         {isComfortable && (
           <div className="flex items-center gap-2 p-3 rounded-lg badge-warning text-[13px]">
-            <AlertTriangle size={14} />
+            <AlertTriangle size={14} className="shrink-0" />
             You&apos;re comfortable, not growing.
           </div>
         )}
@@ -311,11 +292,11 @@ export default function ReviewPage() {
         {/* Week-over-week deltas */}
         <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
           <p className="text-[11px] text-[var(--color-muted)] mb-2">Week-over-week</p>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {[
-              { label: "Azure", delta: deltas.azure, goal: "career" as const },
-              { label: "Arabic", delta: deltas.arabic, goal: "deen" as const },
-              { label: "Tahajjud", delta: deltas.tahajjud, goal: "deen" as const },
+              { label: "Azure", delta: deltas.azure },
+              { label: "Arabic", delta: deltas.arabic },
+              { label: "Tahajjud", delta: deltas.tahajjud },
             ].map((item) => (
               <span
                 key={item.label}
@@ -332,16 +313,16 @@ export default function ReviewPage() {
       {/* Plan adjustment prompt */}
       {needsPlanAdjustment && !planAdjustment && (
         <section className="card">
-          <div className="flex items-center gap-3 p-3 rounded-lg badge-warning">
-            <AlertTriangle size={16} />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg badge-warning">
+            <AlertTriangle size={16} className="shrink-0" />
             <div className="flex-1">
               <p className="text-[13px] font-semibold">2 weeks below 60%</p>
               <p className="text-[11px] text-[var(--color-muted)]">Plan reduce / adjust / same?</p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => setPlanAdjustment("reduce")} className="btn-secondary text-[11px] px-3 py-1.5">Reduce</button>
-              <button onClick={() => setPlanAdjustment("adjust")} className="btn-secondary text-[11px] px-3 py-1.5">Adjust</button>
-              <button onClick={() => setPlanAdjustment("same")} className="btn-secondary text-[11px] px-3 py-1.5">Same</button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button onClick={() => setPlanAdjustment("reduce")} className="flex-1 sm:flex-none btn-secondary text-[11px] px-3 py-2 min-h-[40px]">Reduce</button>
+              <button onClick={() => setPlanAdjustment("adjust")} className="flex-1 sm:flex-none btn-secondary text-[11px] px-3 py-2 min-h-[40px]">Adjust</button>
+              <button onClick={() => setPlanAdjustment("same")} className="flex-1 sm:flex-none btn-secondary text-[11px] px-3 py-2 min-h-[40px]">Same</button>
             </div>
           </div>
         </section>
@@ -365,7 +346,7 @@ export default function ReviewPage() {
           <div>
             <label className="text-[13px] font-semibold mb-2 block">What went well?</label>
             <textarea
-              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent"
+              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent focus:border-[var(--color-career)] focus:ring-2 focus:ring-[var(--color-career)]/10 outline-none"
               value={reflection.wentWell}
               onChange={(e) => setReflection((p) => ({ ...p, wentWell: e.target.value }))}
               placeholder="Celebrate your wins..."
@@ -375,7 +356,7 @@ export default function ReviewPage() {
           <div>
             <label className="text-[13px] font-semibold mb-2 block">What slipped?</label>
             <textarea
-              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent"
+              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent focus:border-[var(--color-career)] focus:ring-2 focus:ring-[var(--color-career)]/10 outline-none"
               value={reflection.slipped}
               onChange={(e) => setReflection((p) => ({ ...p, slipped: e.target.value }))}
               placeholder="Be honest..."
@@ -385,7 +366,7 @@ export default function ReviewPage() {
           <div>
             <label className="text-[13px] font-semibold mb-2 block">What differently?</label>
             <textarea
-              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent"
+              className="w-full min-h-[80px] resize-y rounded-lg border border-[var(--color-border)] p-3 text-[13px] bg-transparent focus:border-[var(--color-career)] focus:ring-2 focus:ring-[var(--color-career)]/10 outline-none"
               value={reflection.differently}
               onChange={(e) => setReflection((p) => ({ ...p, differently: e.target.value }))}
               placeholder="Commit to change..."
@@ -403,13 +384,13 @@ export default function ReviewPage() {
 
         <div className="flex gap-2 mb-4">
           <input
-            className="flex-1 search-input"
+            className="flex-1 text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]"
             value={newIntention}
             onChange={(e) => setNewIntention(e.target.value)}
             placeholder="Next week main Quran ko 6 AM pe karunga"
             onKeyDown={(e) => e.key === "Enter" && addIntention()}
           />
-          <button className="btn-primary px-4" onClick={addIntention}>Add</button>
+          <button className="btn-primary px-4 min-h-[48px] min-w-[48px]" onClick={addIntention}>Add</button>
         </div>
 
         {intentions.length === 0 ? (
@@ -417,11 +398,11 @@ export default function ReviewPage() {
         ) : (
           <div className="space-y-2">
             {intentions.map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-surface-elevated)]">
-                <span className="text-[13px]">
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-surface-elevated)] gap-3">
+                <span className="text-[13px] min-w-0 flex-1">
                   Main <strong>{item.trigger}</strong> ko <strong>{item.action || item.time}</strong> pe karunga
                 </span>
-                <button onClick={() => removeIntention(i)} className="text-[11px] text-[var(--color-danger)] font-medium">
+                <button onClick={() => removeIntention(i)} className="text-[11px] text-[var(--color-danger)] font-medium shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
                   Remove
                 </button>
               </div>
@@ -436,13 +417,13 @@ export default function ReviewPage() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-[11px] text-[var(--color-muted)]">Lisan Book finishes by</p>
-            <p className="text-[15px] font-bold">
+            <p className="text-[13px] sm:text-[15px] font-bold">
               {projectedDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </p>
           </div>
           <div>
             <p className="text-[11px] text-[var(--color-muted)]">Arabic mastery</p>
-            <p className="text-[15px] font-bold tabular-nums">{todayData?.arabicProgress ?? 0}%</p>
+            <p className="text-[13px] sm:text-[15px] font-bold tabular-nums">{todayData?.arabicProgress ?? 0}%</p>
           </div>
         </div>
       </section>
@@ -452,12 +433,12 @@ export default function ReviewPage() {
         <div className="eyebrow mb-3">Next Week</div>
         <div className="grid grid-cols-7 gap-1">
           {nextWeekDays.map((day, i) => (
-            <div key={i} className="text-center p-2 rounded-lg bg-[var(--color-surface-elevated)]">
-              <span className="text-[10px] text-[var(--color-muted)] block">
+            <div key={i} className="text-center p-1.5 sm:p-2 rounded-lg bg-[var(--color-surface-elevated)]">
+              <span className="text-[8px] sm:text-[10px] text-[var(--color-muted)] block">
                 {day.toLocaleDateString("en-US", { weekday: "short" })}
               </span>
-              <span className="text-[12px] font-semibold">{day.getDate()}</span>
-              <span className="text-[9px] block mt-0.5" style={{ color: i < 4 ? "var(--color-deen)" : "var(--color-warning)" }}>
+              <span className="text-[11px] sm:text-[12px] font-semibold">{day.getDate()}</span>
+              <span className="text-[8px] sm:text-[9px] block mt-0.5" style={{ color: i < 4 ? "var(--color-deen)" : "var(--color-warning)" }}>
                 {i < 4 ? "Study" : "Review"}
               </span>
             </div>

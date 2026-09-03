@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import {
   ExternalLink,
-  Check,
   Search,
   Settings,
   BookOpen,
@@ -100,998 +99,537 @@ interface SettingsData {
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState<TabId>("arabic");
   const [searchQuery, setSearchQuery] = useState<string>("");
-
-  // Arabic
   const [arabicLectures, setArabicLectures] = useState<ArabicLecture[]>([]);
-
-  // Azure
   const [azureSessions, setAzureSessions] = useState<AzureSession[]>([]);
-
-  // Reading
   const [readingPages, setReadingPages] = useState<number>(0);
-  const [readingData, setReadingData] = useState<ReadingData>({
-    pagesToday: 0,
-    totalPages: 0,
-    activeDays: 0,
-  });
-
-  // Memorization
+  const [readingData, setReadingData] = useState<ReadingData>({ pagesToday: 0, totalPages: 0, activeDays: 0 });
   const [memSurahs, setMemSurahs] = useState<number>(0);
   const [memAyahs, setMemAyahs] = useState<number>(0);
-  const [memData, setMemData] = useState<MemorizationData>({
-    surahsToday: 0,
-    ayahsToday: 0,
-    totalSurahs: 0,
-    totalAyahs: 0,
-  });
-
-  // Tahajjud
+  const [memData, setMemData] = useState<MemorizationData>({ surahsToday: 0, ayahsToday: 0, totalSurahs: 0, totalAyahs: 0 });
   const [tahajjudEntries, setTahajjudEntries] = useState<TahajjudEntry[]>([]);
   const [tahajjudWokeUp, setTahajjudWokeUp] = useState<boolean | null>(null);
   const [tahajjudPrayed, setTahajjudPrayed] = useState<boolean | null>(null);
-
-  // Projects
   const [projects, setProjects] = useState<Project[]>([]);
-
-  // Communication
   const [commSessions, setCommSessions] = useState<CommunicationSession[]>([]);
   const [commTopic, setCommTopic] = useState<string>("");
   const [commExplain, setCommExplain] = useState<string>("");
-
-  // Settings
-  const [settingsData, setSettingsData] = useState<SettingsData>({
-    name: "",
-    missionStart: "",
-    missionEnd: "",
-    baselinePages: 0,
-    baselineSurahs: 0,
-    baselineAyahs: 0,
-  });
-
-  // Loading states
+  const [settingsData, setSettingsData] = useState<SettingsData>({ name: "", missionStart: "", missionEnd: "", baselinePages: 0, baselineSurahs: 0, baselineAyahs: 0 });
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
 
-  const fetchArabic = useCallback(async () => {
+  const fetchTabData = useCallback(async (tabId: TabId) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/deen/arabic?tab=lectures");
-      const data = await res.json();
-      setArabicLectures(data.lectures ?? data ?? []);
-    } catch {
-      setArabicLectures([]);
-    } finally {
-      setLoading(false);
-    }
+      switch (tabId) {
+        case "arabic": {
+          const res = await fetch("/api/deen/arabic?tab=lectures");
+          const data = await res.json();
+          setArabicLectures(data.lectures ?? data ?? []);
+          break;
+        }
+        case "azure": {
+          const res = await fetch("/api/career/azure");
+          const data = await res.json();
+          setAzureSessions(data.sessions ?? []);
+          break;
+        }
+        case "reading": {
+          const res = await fetch("/api/deen/reading");
+          const data = await res.json();
+          setReadingData({ pagesToday: data.pagesToday ?? 0, totalPages: data.totalPages ?? 0, activeDays: data.activeDays ?? 0 });
+          break;
+        }
+        case "memorization": {
+          const res = await fetch("/api/deen/memorization");
+          const data = await res.json();
+          setMemData({ surahsToday: data.surahsToday ?? 0, ayahsToday: data.ayahsToday ?? 0, totalSurahs: data.totalSurahs ?? 0, totalAyahs: data.totalAyahs ?? 0 });
+          break;
+        }
+        case "tahajjud": {
+          const res = await fetch("/api/deen/tahajjud");
+          const data = await res.json();
+          setTahajjudEntries(data.entries ?? data ?? []);
+          break;
+        }
+        case "projects": {
+          const res = await fetch("/api/career/projects");
+          const data = await res.json();
+          setProjects(data.projects ?? data ?? []);
+          break;
+        }
+        case "communication": {
+          const res = await fetch("/api/career/communication");
+          const data = await res.json();
+          setCommSessions(data.sessions ?? data ?? []);
+          break;
+        }
+        case "settings": {
+          const res = await fetch("/api/settings");
+          const data = await res.json();
+          setSettingsData({ name: data.name ?? "", missionStart: data.missionStart ?? "", missionEnd: data.missionEnd ?? "", baselinePages: data.baselinePages ?? 0, baselineSurahs: data.baselineSurahs ?? 0, baselineAyahs: data.baselineAyahs ?? 0 });
+          break;
+        }
+      }
+    } catch {} finally { setLoading(false); }
   }, []);
 
-  const fetchAzure = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/career/azure");
-      const data = await res.json();
-      setAzureSessions(data.sessions ?? []);
-    } catch {
-      setAzureSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchReading = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/deen/reading");
-      const data = await res.json();
-      setReadingData({
-        pagesToday: data.pagesToday ?? 0,
-        totalPages: data.totalPages ?? 0,
-        activeDays: data.activeDays ?? 0,
-      });
-    } catch {
-      setReadingData({ pagesToday: 0, totalPages: 0, activeDays: 0 });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchMemorization = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/deen/memorization");
-      const data = await res.json();
-      setMemData({
-        surahsToday: data.surahsToday ?? 0,
-        ayahsToday: data.ayahsToday ?? 0,
-        totalSurahs: data.totalSurahs ?? 0,
-        totalAyahs: data.totalAyahs ?? 0,
-      });
-    } catch {
-      setMemData({ surahsToday: 0, ayahsToday: 0, totalSurahs: 0, totalAyahs: 0 });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchTahajjud = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/deen/tahajjud");
-      const data = await res.json();
-      setTahajjudEntries(data.entries ?? data ?? []);
-    } catch {
-      setTahajjudEntries([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchProjects = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/career/projects");
-      const data = await res.json();
-      setProjects(data.projects ?? data ?? []);
-    } catch {
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchCommunication = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/career/communication");
-      const data = await res.json();
-      setCommSessions(data.sessions ?? data ?? []);
-    } catch {
-      setCommSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchSettings = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/settings");
-      const data = await res.json();
-      setSettingsData({
-        name: data.name ?? "",
-        missionStart: data.missionStart ?? "",
-        missionEnd: data.missionEnd ?? "",
-        baselinePages: data.baselinePages ?? 0,
-        baselineSurahs: data.baselineSurahs ?? 0,
-        baselineAyahs: data.baselineAyahs ?? 0,
-      });
-    } catch {
-      /* keep defaults */
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
+  const switchTab = useCallback((tabId: TabId) => {
+    setActiveTab(tabId);
     setSearchQuery("");
-    switch (activeTab) {
-      case "arabic":
-        fetchArabic();
-        break;
-      case "azure":
-        fetchAzure();
-        break;
-      case "reading":
-        fetchReading();
-        break;
-      case "memorization":
-        fetchMemorization();
-        break;
-      case "tahajjud":
-        fetchTahajjud();
-        break;
-      case "projects":
-        fetchProjects();
-        break;
-      case "communication":
-        fetchCommunication();
-        break;
-      case "settings":
-        fetchSettings();
-        break;
-    }
-  }, [
-    activeTab,
-    fetchArabic,
-    fetchAzure,
-    fetchReading,
-    fetchMemorization,
-    fetchTahajjud,
-    fetchProjects,
-    fetchCommunication,
-    fetchSettings,
-  ]);
+    fetchTabData(tabId);
+  }, [fetchTabData]);
 
-  // --- Submit handlers ---
+  // Fetch initial tab data
+  useState(() => { fetchTabData("arabic"); });
 
+  // Submit handlers
   const handleReadingSave = async () => {
     setSaving(true);
     try {
-      await fetch("/api/deen/reading", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pages: readingPages }),
-      });
-      await fetchReading();
+      await fetch("/api/deen/reading", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pages: readingPages }) });
+      await fetchTabData("reading");
       setReadingPages(0);
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const handleMemSave = async () => {
     setSaving(true);
     try {
-      await fetch("/api/deen/memorization", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ surahs: memSurahs, ayahs: memAyahs }),
-      });
-      await fetchMemorization();
-      setMemSurahs(0);
-      setMemAyahs(0);
-    } finally {
-      setSaving(false);
-    }
+      await fetch("/api/deen/memorization", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ surahs: memSurahs, ayahs: memAyahs }) });
+      await fetchTabData("memorization");
+      setMemSurahs(0); setMemAyahs(0);
+    } finally { setSaving(false); }
   };
 
   const handleTahajjudLog = async () => {
     if (tahajjudWokeUp === null || tahajjudPrayed === null) return;
     setSaving(true);
     try {
-      await fetch("/api/deen/tahajjud", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wokeUp: tahajjudWokeUp, prayed: tahajjudPrayed }),
-      });
-      await fetchTahajjud();
-      setTahajjudWokeUp(null);
-      setTahajjudPrayed(null);
-    } finally {
-      setSaving(false);
-    }
+      await fetch("/api/deen/tahajjud", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wokeUp: tahajjudWokeUp, prayed: tahajjudPrayed }) });
+      await fetchTabData("tahajjud");
+      setTahajjudWokeUp(null); setTahajjudPrayed(null);
+    } finally { setSaving(false); }
   };
 
   const handleCommLog = async () => {
     if (!commTopic.trim()) return;
     setSaving(true);
     try {
-      await fetch("/api/career/communication", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: commTopic, explainIt: commExplain }),
-      });
-      await fetchCommunication();
-      setCommTopic("");
-      setCommExplain("");
-    } finally {
-      setSaving(false);
-    }
+      await fetch("/api/career/communication", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic: commTopic, explainIt: commExplain }) });
+      await fetchTabData("communication");
+      setCommTopic(""); setCommExplain("");
+    } finally { setSaving(false); }
   };
 
   const handleSettingsSave = async () => {
     setSaving(true);
     try {
-      await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settingsData),
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // --- Render helpers ---
-
-  const renderArabic = () => {
-    const filtered = searchQuery
-      ? arabicLectures.filter((l) =>
-          l.lecture.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          String(l.id).includes(searchQuery) ||
-          l.status.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : arabicLectures;
-
-    return (
-    <div className="animate-fade-in space-y-5">
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card text-center">
-          <p className="text-[11px] text-[var(--color-muted)]">Total</p>
-          <p className="text-[24px] font-extrabold tabular-nums">{arabicLectures.length}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-[11px] text-[var(--color-muted)]">Completed</p>
-          <p className="text-[24px] font-extrabold tabular-nums">{arabicLectures.filter((l) => l.status === "completed").length}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-[11px] text-[var(--color-muted)]">Remaining</p>
-          <p className="text-[24px] font-extrabold tabular-nums">{arabicLectures.filter((l) => l.status !== "completed").length}</p>
-        </div>
-      </div>
-
-      <input
-        type="text"
-        placeholder="Search lectures..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="search-input"
-      />
-
-      {loading ? (
-        <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No lectures found.</p>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((lecture) => (
-            <div key={lecture.id} className="card card-deen flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-8 text-right shrink-0">
-                  {lecture.id}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium truncate">{lecture.lecture}</p>
-                  <span className="text-[11px] text-[var(--color-muted)] capitalize">{lecture.status}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {lecture.youtube && (
-                  <a
-                    href={lecture.youtube}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--color-muted)] hover:text-[var(--color-deen)]"
-                  >
-                    <ExternalLink size={14} />
-                  </a>
-                )}
-                <Link
-                  href={`/arabic/${lecture.id}`}
-                  className="btn-secondary text-[12px] px-3 py-1.5"
-                >
-                  Open
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-  };
-
-  const renderAzure = () => {
-    const filtered = searchQuery
-      ? azureSessions.filter((s) =>
-          s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          String(s.session_number).includes(searchQuery) ||
-          s.status.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : azureSessions;
-
-    return (
-    <div className="animate-fade-in space-y-5">
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card text-center">
-          <p className="text-[11px] text-[var(--color-muted)]">Total</p>
-          <p className="text-[24px] font-extrabold tabular-nums">{azureSessions.length}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-[11px] text-[var(--color-muted)]">Completed</p>
-          <p className="text-[24px] font-extrabold tabular-nums">{azureSessions.filter((s) => s.status === "completed").length}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-[11px] text-[var(--color-muted)]">Remaining</p>
-          <p className="text-[24px] font-extrabold tabular-nums">{azureSessions.filter((s) => s.status !== "completed").length}</p>
-        </div>
-      </div>
-
-      <input
-        type="text"
-        placeholder="Search sessions..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="search-input"
-      />
-
-      {loading ? (
-        <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No sessions found.</p>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((session) => (
-            <div key={session.id} className="card flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-8 text-right shrink-0">
-                  {session.session_number}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium truncate">{session.title}</p>
-                  <span className="text-[11px] text-[var(--color-muted)] capitalize">{session.status.replace("_", " ")}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {session.drive_link && (
-                  <a
-                    href={session.drive_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--color-muted)] hover:text-[var(--color-career)]"
-                  >
-                    <ExternalLink size={14} />
-                  </a>
-                )}
-                <Link
-                  href={`/azure/${session.id}`}
-                  className="btn-secondary text-[12px] px-3 py-1.5"
-                >
-                  Open
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-  };
-
-  const renderReading = () => {
-    const progressPct =
-      readingData.totalPages > 0
-        ? Math.min(
-            100,
-            Math.round((readingData.totalPages / 100) * 100)
-          )
-        : 0;
-
-    return (
-      <div className="animate-fade-in">
-        <div className="grid-stats" style={{ marginBottom: "1.5rem" }}>
-          <div className="stat">
-            <div className="stat-label">Total Pages</div>
-            <div className="small">{readingData.totalPages}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Active Days</div>
-            <div className="small">{readingData.activeDays}</div>
-          </div>
-        </div>
-
-        <div className="progress" style={{ marginBottom: "1.5rem" }}>
-          <div
-            className="bar"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-
-        <div className="card" style={{ marginBottom: "1rem" }}>
-          <div className="eyebrow">Log Today</div>
-          <div className="form-group">
-            <label htmlFor="reading-pages">Pages today</label>
-            <input
-              id="reading-pages"
-              type="number"
-              min={0}
-              value={readingPages || ""}
-              onChange={(e) => setReadingPages(Number(e.target.value))}
-              placeholder="Pages read today"
-            />
-          </div>
-          <button
-            className="btn-primary"
-            onClick={handleReadingSave}
-            disabled={saving || readingPages <= 0}
-          >
-            {saving ? "Saving..." : "Save"}
-          </button>
-        </div>
-
-        {loading && <p className="small">Loading...</p>}
-      </div>
-    );
-  };
-
-  const renderMemorization = () => {
-    const surahProgressPct =
-      memData.totalSurahs > 0
-        ? Math.min(100, Math.round((memData.totalSurahs / 114) * 100))
-        : 0;
-
-    return (
-      <div className="animate-fade-in">
-        <div className="grid-stats" style={{ marginBottom: "1.5rem" }}>
-          <div className="stat">
-            <div className="stat-label">Total Surahs</div>
-            <div className="small">{memData.totalSurahs}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Total Ayahs</div>
-            <div className="small">{memData.totalAyahs}</div>
-          </div>
-        </div>
-
-        <div className="progress" style={{ marginBottom: "1.5rem" }}>
-          <div
-            className="bar"
-            style={{ width: `${surahProgressPct}%` }}
-          />
-        </div>
-
-        <div className="card" style={{ marginBottom: "1rem" }}>
-          <div className="eyebrow">Log Today</div>
-          <div className="grid-2">
-            <div className="form-group">
-              <label htmlFor="mem-surahs">Surahs today</label>
-              <input
-                id="mem-surahs"
-                type="number"
-                min={0}
-                value={memSurahs || ""}
-                onChange={(e) => setMemSurahs(Number(e.target.value))}
-                placeholder="Surahs memorized"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="mem-ayahs">Ayahs today</label>
-              <input
-                id="mem-ayahs"
-                type="number"
-                min={0}
-                value={memAyahs || ""}
-                onChange={(e) => setMemAyahs(Number(e.target.value))}
-                placeholder="Ayahs memorized"
-              />
-            </div>
-          </div>
-          <button
-            className="btn-primary"
-            onClick={handleMemSave}
-            disabled={saving || (memSurahs <= 0 && memAyahs <= 0)}
-          >
-            {saving ? "Saving..." : "Save"}
-          </button>
-        </div>
-
-        {loading && <p className="small">Loading...</p>}
-      </div>
-    );
-  };
-
-  const renderTahajjud = () => (
-    <div className="animate-fade-in">
-      <div className="grid-stats" style={{ marginBottom: "1.5rem" }}>
-        <div className="stat">
-          <div className="stat-label">Total Nights</div>
-          <div className="small">{tahajjudEntries.length}</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Prayed</div>
-          <div className="small">
-            {tahajjudEntries.filter((e) => e.prayed).length}
-          </div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Woke Up</div>
-          <div className="small">
-            {tahajjudEntries.filter((e) => e.wokeUp).length}
-          </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="eyebrow">Log Night</div>
-
-        <div className="form-group">
-          <label>Woke up?</label>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              className={`btn-secondary ${
-                tahajjudWokeUp === true ? "check" : ""
-              }`}
-              onClick={() => setTahajjudWokeUp(true)}
-              type="button"
-            >
-              {tahajjudWokeUp === true && <Check size={14} />}
-              Yes
-            </button>
-            <button
-              className={`btn-secondary ${
-                tahajjudWokeUp === false ? "check" : ""
-              }`}
-              onClick={() => setTahajjudWokeUp(false)}
-              type="button"
-            >
-              No
-            </button>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>Prayed?</label>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              className={`btn-secondary ${
-                tahajjudPrayed === true ? "check" : ""
-              }`}
-              onClick={() => setTahajjudPrayed(true)}
-              type="button"
-            >
-              {tahajjudPrayed === true && <Check size={14} />}
-              Yes
-            </button>
-            <button
-              className={`btn-secondary ${
-                tahajjudPrayed === false ? "check" : ""
-              }`}
-              onClick={() => setTahajjudPrayed(false)}
-              type="button"
-            >
-              No
-            </button>
-          </div>
-        </div>
-
-        <button
-          className="btn-primary"
-          onClick={handleTahajjudLog}
-          disabled={saving || tahajjudWokeUp === null || tahajjudPrayed === null}
-        >
-          {saving ? "Saving..." : "Log Night"}
-        </button>
-      </div>
-
-      <div className="eyebrow" style={{ marginBottom: "0.75rem" }}>
-        History
-      </div>
-      {loading ? (
-        <p className="small">Loading...</p>
-      ) : tahajjudEntries.length === 0 ? (
-        <p className="empty">No entries yet.</p>
-      ) : (
-        <div className="table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Woke Up</th>
-                <th>Prayed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tahajjudEntries.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{entry.date}</td>
-                  <td>
-                    <span className={`badge ${entry.wokeUp ? "check" : ""}`}>
-                      {entry.wokeUp && <Check size={14} />}
-                      {entry.wokeUp ? "Yes" : "No"}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${entry.prayed ? "check" : ""}`}>
-                      {entry.prayed && <Check size={14} />}
-                      {entry.prayed ? "Yes" : "No"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderProjects = () => (
-    <div className="animate-fade-in">
-      {loading ? (
-        <p className="small">Loading...</p>
-      ) : projects.length === 0 ? (
-        <p className="empty">No projects found.</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {projects.map((project) => {
-            const doneCount = project.tasks.filter((t) => t.done).length;
-            const totalCount = project.tasks.length;
-            const pct =
-              totalCount > 0
-                ? Math.round((doneCount / totalCount) * 100)
-                : 0;
-
-            return (
-              <div className="card" key={project.id}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  <div className="eyebrow">{project.name}</div>
-                  <span className="small">
-                    {doneCount}/{totalCount} tasks
-                  </span>
-                </div>
-
-                <div className="progress" style={{ marginBottom: "0.75rem" }}>
-                  <div className="bar" style={{ width: `${pct}%` }} />
-                </div>
-
-                {project.tasks.length === 0 ? (
-                  <p className="empty">No tasks.</p>
-                ) : (
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                    {project.tasks.map((task) => (
-                      <li
-                        key={task.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          padding: "0.25rem 0",
-                        }}
-                      >
-                        <span
-                          className={`badge ${task.done ? "check" : ""}`}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                          }}
-                        >
-                          {task.done && <Check size={14} />}
-                          {task.title}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderCommunication = () => (
-    <div className="animate-fade-in">
-      <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="eyebrow">Log Session</div>
-        <div className="form-group">
-          <label htmlFor="comm-topic">Topic</label>
-          <input
-            id="comm-topic"
-            type="text"
-            value={commTopic}
-            onChange={(e) => setCommTopic(e.target.value)}
-            placeholder="What did you practice?"
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="comm-explain">Explain It Challenge</label>
-          <textarea
-            id="comm-explain"
-            value={commExplain}
-            onChange={(e) => setCommExplain(e.target.value)}
-            placeholder="Explain the concept in your own words..."
-            rows={3}
-          />
-        </div>
-        <button
-          className="btn-primary"
-          onClick={handleCommLog}
-          disabled={saving || !commTopic.trim()}
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
-      </div>
-
-      <div className="eyebrow" style={{ marginBottom: "0.75rem" }}>
-        Practice Sessions
-      </div>
-      {loading ? (
-        <p className="small">Loading...</p>
-      ) : commSessions.length === 0 ? (
-        <p className="empty">No sessions yet.</p>
-      ) : (
-        <div className="table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Topic</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {commSessions.map((session) => (
-                <tr key={session.id}>
-                  <td>{session.date}</td>
-                  <td>{session.topic}</td>
-                  <td>
-                    <span className="badge">{session.score}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderSettings = () => (
-    <div className="animate-fade-in">
-      <div className="card">
-        <div className="eyebrow">Profile</div>
-        <div className="form-group">
-          <label htmlFor="settings-name">Name</label>
-          <input
-            id="settings-name"
-            type="text"
-            value={settingsData.name}
-            onChange={(e) =>
-              setSettingsData((prev) => ({ ...prev, name: e.target.value }))
-            }
-            placeholder="Your name"
-          />
-        </div>
-
-        <div className="grid-2">
-          <div className="form-group">
-            <label htmlFor="settings-mission-start">Mission Start</label>
-            <input
-              id="settings-mission-start"
-              type="date"
-              value={settingsData.missionStart}
-              onChange={(e) =>
-                setSettingsData((prev) => ({
-                  ...prev,
-                  missionStart: e.target.value,
-                }))
-              }
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="settings-mission-end">Mission End</label>
-            <input
-              id="settings-mission-end"
-              type="date"
-              value={settingsData.missionEnd}
-              onChange={(e) =>
-                setSettingsData((prev) => ({
-                  ...prev,
-                  missionEnd: e.target.value,
-                }))
-              }
-            />
-          </div>
-        </div>
-
-        <div className="eyebrow" style={{ marginTop: "1rem" }}>Baselines</div>
-        <div className="grid-3">
-          <div className="form-group">
-            <label htmlFor="settings-baseline-pages">Pages / day</label>
-            <input
-              id="settings-baseline-pages"
-              type="number"
-              min={0}
-              value={settingsData.baselinePages || ""}
-              onChange={(e) =>
-                setSettingsData((prev) => ({
-                  ...prev,
-                  baselinePages: Number(e.target.value),
-                }))
-              }
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="settings-baseline-surahs">Surahs / day</label>
-            <input
-              id="settings-baseline-surahs"
-              type="number"
-              min={0}
-              value={settingsData.baselineSurahs || ""}
-              onChange={(e) =>
-                setSettingsData((prev) => ({
-                  ...prev,
-                  baselineSurahs: Number(e.target.value),
-                }))
-              }
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="settings-baseline-ayahs">Ayahs / day</label>
-            <input
-              id="settings-baseline-ayahs"
-              type="number"
-              min={0}
-              value={settingsData.baselineAyahs || ""}
-              onChange={(e) =>
-                setSettingsData((prev) => ({
-                  ...prev,
-                  baselineAyahs: Number(e.target.value),
-                }))
-              }
-            />
-          </div>
-        </div>
-
-        <button
-          className="btn-primary"
-          onClick={handleSettingsSave}
-          disabled={saving}
-          style={{ marginTop: "1rem" }}
-        >
-          {saving ? "Saving..." : "Save Settings"}
-        </button>
-      </div>
-
-      {loading && (
-        <p className="small" style={{ marginTop: "0.5rem" }}>
-          Loading...
-        </p>
-      )}
-    </div>
-  );
-
-  // --- Tab content map ---
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case "arabic":
-        return renderArabic();
-      case "azure":
-        return renderAzure();
-      case "reading":
-        return renderReading();
-      case "memorization":
-        return renderMemorization();
-      case "tahajjud":
-        return renderTahajjud();
-      case "projects":
-        return renderProjects();
-      case "communication":
-        return renderCommunication();
-      case "settings":
-        return renderSettings();
-      default:
-        return null;
-    }
+      await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settingsData) });
+    } finally { setSaving(false); }
   };
 
   return (
     <div className="animate-fade-in space-y-5">
       <h1 className="text-[26px] font-bold tracking-tight">Library</h1>
-      <div className="tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={activeTab === tab.id ? "active" : ""}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+
+      {/* Scrollable tabs */}
+      <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+        <div className="flex gap-2 min-w-max">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium whitespace-nowrap transition-all shrink-0 ${
+                activeTab === tab.id
+                  ? "bg-[var(--color-career)] text-white"
+                  : "bg-[var(--color-surface)] text-[var(--color-muted)] hover:text-[var(--color-foreground)] border border-[var(--color-border)]"
+              }`}
+              onClick={() => switchTab(tab.id)}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {renderContent()}
+      {/* Arabic */}
+      {activeTab === "arabic" && (
+        <div className="animate-fade-in space-y-5">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Total</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{arabicLectures.length}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Done</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{arabicLectures.filter((l) => l.status === "completed").length}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Left</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{arabicLectures.filter((l) => l.status !== "completed").length}</p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted)]" />
+            <input
+              type="text"
+              placeholder="Search lectures..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          {loading ? (
+            <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
+          ) : (searchQuery ? arabicLectures.filter((l) => l.lecture.toLowerCase().includes(searchQuery.toLowerCase()) || String(l.id).includes(searchQuery) || l.status.toLowerCase().includes(searchQuery.toLowerCase())) : arabicLectures).length === 0 ? (
+            <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No lectures found.</p>
+          ) : (
+            <div className="space-y-2">
+              {(searchQuery ? arabicLectures.filter((l) => l.lecture.toLowerCase().includes(searchQuery.toLowerCase()) || String(l.id).includes(searchQuery) || l.status.toLowerCase().includes(searchQuery.toLowerCase())) : arabicLectures).map((lecture) => (
+                <div key={lecture.id} className="card card-deen flex items-center justify-between gap-3 py-3 px-3 sm:px-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-6 sm:w-8 text-right shrink-0">{lecture.id}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium truncate">{lecture.lecture}</p>
+                      <span className="text-[11px] text-[var(--color-muted)] capitalize">{lecture.status}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {lecture.youtube && (
+                      <a href={lecture.youtube} target="_blank" rel="noopener noreferrer" className="text-[var(--color-muted)] hover:text-[var(--color-deen)] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
+                    <Link href={`/arabic/${lecture.id}`} className="btn-secondary text-[12px] px-3 py-1.5">Open</Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Azure */}
+      {activeTab === "azure" && (
+        <div className="animate-fade-in space-y-5">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Total</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{azureSessions.length}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Done</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{azureSessions.filter((s) => s.status === "completed").length}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Left</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{azureSessions.filter((s) => s.status !== "completed").length}</p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted)]" />
+            <input
+              type="text"
+              placeholder="Search sessions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          {loading ? (
+            <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
+          ) : (searchQuery ? azureSessions.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()) || String(s.session_number).includes(searchQuery) || s.status.toLowerCase().includes(searchQuery.toLowerCase())) : azureSessions).length === 0 ? (
+            <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No sessions found.</p>
+          ) : (
+            <div className="space-y-2">
+              {(searchQuery ? azureSessions.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()) || String(s.session_number).includes(searchQuery) || s.status.toLowerCase().includes(searchQuery.toLowerCase())) : azureSessions).map((session) => (
+                <div key={session.id} className="card flex items-center justify-between gap-3 py-3 px-3 sm:px-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-6 sm:w-8 text-right shrink-0">{session.session_number}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium truncate">{session.title}</p>
+                      <span className="text-[11px] text-[var(--color-muted)] capitalize">{session.status.replace("_", " ")}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {session.drive_link && (
+                      <a href={session.drive_link} target="_blank" rel="noopener noreferrer" className="text-[var(--color-muted)] hover:text-[var(--color-career)] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
+                    <Link href={`/azure/${session.id}`} className="btn-secondary text-[12px] px-3 py-1.5">Open</Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reading */}
+      {activeTab === "reading" && (
+        <div className="animate-fade-in space-y-5">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Total Pages</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{readingData.totalPages}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Active Days</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{readingData.activeDays}</p>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="eyebrow mb-3">Log Today</div>
+            <div className="form-group">
+              <label htmlFor="reading-pages" className="text-[13px] font-medium mb-1.5 block">Pages today</label>
+              <input
+                id="reading-pages"
+                type="number"
+                min={0}
+                value={readingPages || ""}
+                onChange={(e) => setReadingPages(Number(e.target.value))}
+                placeholder="Pages read today"
+                className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]"
+              />
+            </div>
+            <button className="btn-primary w-full mt-3" onClick={handleReadingSave} disabled={saving || readingPages <= 0}>
+              {saving ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Memorization */}
+      {activeTab === "memorization" && (
+        <div className="animate-fade-in space-y-5">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Total Surahs</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{memData.totalSurahs}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Total Ayahs</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{memData.totalAyahs}</p>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="eyebrow mb-3">Log Today</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="form-group">
+                <label htmlFor="mem-surahs" className="text-[13px] font-medium mb-1.5 block">Surahs</label>
+                <input id="mem-surahs" type="number" min={0} value={memSurahs || ""} onChange={(e) => setMemSurahs(Number(e.target.value))} placeholder="0" className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px] text-center" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="mem-ayahs" className="text-[13px] font-medium mb-1.5 block">Ayahs</label>
+                <input id="mem-ayahs" type="number" min={0} value={memAyahs || ""} onChange={(e) => setMemAyahs(Number(e.target.value))} placeholder="0" className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px] text-center" />
+              </div>
+            </div>
+            <button className="btn-primary w-full mt-3" onClick={handleMemSave} disabled={saving || (memSurahs <= 0 && memAyahs <= 0)}>
+              {saving ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tahajjud */}
+      {activeTab === "tahajjud" && (
+        <div className="animate-fade-in space-y-5">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Nights</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{tahajjudEntries.length}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Prayed</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{tahajjudEntries.filter((e) => e.prayed).length}</p>
+            </div>
+            <div className="card text-center py-3 sm:py-4">
+              <p className="text-[11px] text-[var(--color-muted)]">Woke Up</p>
+              <p className="text-[20px] sm:text-[24px] font-extrabold tabular-nums">{tahajjudEntries.filter((e) => e.wokeUp).length}</p>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="eyebrow mb-3">Log Night</div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[13px] font-medium mb-2 block">Woke up?</label>
+                <div className="flex gap-2">
+                  <button className={`flex-1 btn-secondary text-[13px] ${tahajjudWokeUp === true ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen)]" : ""}`} onClick={() => setTahajjudWokeUp(true)} type="button">Yes</button>
+                  <button className={`flex-1 btn-secondary text-[13px] ${tahajjudWokeUp === false ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen)]" : ""}`} onClick={() => setTahajjudWokeUp(false)} type="button">No</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[13px] font-medium mb-2 block">Prayed?</label>
+                <div className="flex gap-2">
+                  <button className={`flex-1 btn-secondary text-[13px] ${tahajjudPrayed === true ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen)]" : ""}`} onClick={() => setTahajjudPrayed(true)} type="button">Yes</button>
+                  <button className={`flex-1 btn-secondary text-[13px] ${tahajjudPrayed === false ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen)]" : ""}`} onClick={() => setTahajjudPrayed(false)} type="button">No</button>
+                </div>
+              </div>
+              <button className="btn-primary w-full" onClick={handleTahajjudLog} disabled={saving || tahajjudWokeUp === null || tahajjudPrayed === null}>
+                {saving ? "Saving..." : "Log Night"}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div className="eyebrow mb-3">History</div>
+            {loading ? (
+              <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
+            ) : tahajjudEntries.length === 0 ? (
+              <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No entries yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {tahajjudEntries.map((entry) => (
+                  <div key={entry.id} className="card flex items-center justify-between py-3 px-3 sm:px-4">
+                    <span className="text-[13px] font-medium tabular-nums">{entry.date}</span>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[12px] font-medium ${entry.wokeUp ? "text-[var(--color-deen)]" : "text-[var(--color-muted)]"}`}>
+                        {entry.wokeUp ? "✓ Woke" : "✗ Slept"}
+                      </span>
+                      <span className={`text-[12px] font-medium ${entry.prayed ? "text-[var(--color-deen)]" : "text-[var(--color-muted)]"}`}>
+                        {entry.prayed ? "✓ Prayed" : "✗ Missed"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Projects */}
+      {activeTab === "projects" && (
+        <div className="animate-fade-in space-y-4">
+          {loading ? (
+            <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
+          ) : projects.length === 0 ? (
+            <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No projects found.</p>
+          ) : (
+            projects.map((project) => {
+              const doneCount = project.tasks.filter((t) => t.done).length;
+              const totalCount = project.tasks.length;
+              const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+              return (
+                <div key={project.id} className="card">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="eyebrow">{project.name}</span>
+                    <span className="text-[12px] text-[var(--color-muted)] tabular-nums">{doneCount}/{totalCount}</span>
+                  </div>
+                  <div className="progress mb-3">
+                    <div className="bar" style={{ width: `${pct}%` }} />
+                  </div>
+                  {project.tasks.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {project.tasks.map((task) => (
+                        <div key={task.id} className="flex items-center gap-2 py-1">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${task.done ? "bg-[var(--color-success)]" : "bg-[var(--color-border)]"}`} />
+                          <span className={`text-[13px] ${task.done ? "text-[var(--color-muted)] line-through" : ""}`}>{task.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-[var(--color-muted)]">No tasks.</p>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Communication */}
+      {activeTab === "communication" && (
+        <div className="animate-fade-in space-y-5">
+          <div className="card">
+            <div className="eyebrow mb-3">Log Session</div>
+            <div className="form-group mb-3">
+              <label htmlFor="comm-topic" className="text-[13px] font-medium mb-1.5 block">Topic</label>
+              <input id="comm-topic" type="text" value={commTopic} onChange={(e) => setCommTopic(e.target.value)} placeholder="What did you practice?" className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
+            </div>
+            <div className="form-group mb-3">
+              <label htmlFor="comm-explain" className="text-[13px] font-medium mb-1.5 block">Explain It Challenge</label>
+              <textarea id="comm-explain" value={commExplain} onChange={(e) => setCommExplain(e.target.value)} placeholder="Explain the concept in your own words..." rows={3} className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[80px] resize-y" />
+            </div>
+            <button className="btn-primary w-full" onClick={handleCommLog} disabled={saving || !commTopic.trim()}>
+              {saving ? "Saving..." : "Save"}
+            </button>
+          </div>
+
+          <div>
+            <div className="eyebrow mb-3">Practice Sessions</div>
+            {loading ? (
+              <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
+            ) : commSessions.length === 0 ? (
+              <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No sessions yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {commSessions.map((session) => (
+                  <div key={session.id} className="card flex items-center justify-between py-3 px-3 sm:px-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium truncate">{session.topic}</p>
+                      <span className="text-[11px] text-[var(--color-muted)] tabular-nums">{session.date}</span>
+                    </div>
+                    <span className="text-[13px] font-bold tabular-nums shrink-0">{session.score}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Settings */}
+      {activeTab === "settings" && (
+        <div className="animate-fade-in space-y-5">
+          <div className="card">
+            <div className="eyebrow mb-3">Profile</div>
+            <div className="form-group mb-3">
+              <label htmlFor="settings-name" className="text-[13px] font-medium mb-1.5 block">Name</label>
+              <input id="settings-name" type="text" value={settingsData.name} onChange={(e) => setSettingsData((prev) => ({ ...prev, name: e.target.value }))} placeholder="Your name" className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="form-group">
+                <label htmlFor="settings-mission-start" className="text-[13px] font-medium mb-1.5 block">Start</label>
+                <input id="settings-mission-start" type="date" value={settingsData.missionStart} onChange={(e) => setSettingsData((prev) => ({ ...prev, missionStart: e.target.value }))} className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="settings-mission-end" className="text-[13px] font-medium mb-1.5 block">End</label>
+                <input id="settings-mission-end" type="date" value={settingsData.missionEnd} onChange={(e) => setSettingsData((prev) => ({ ...prev, missionEnd: e.target.value }))} className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="eyebrow mb-3">Baselines</div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="form-group">
+                <label htmlFor="settings-baseline-pages" className="text-[11px] sm:text-[13px] font-medium mb-1.5 block">Pages/day</label>
+                <input id="settings-baseline-pages" type="number" min={0} value={settingsData.baselinePages || ""} onChange={(e) => setSettingsData((prev) => ({ ...prev, baselinePages: Number(e.target.value) }))} className="w-full text-[13px] px-2 sm:px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px] text-center" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="settings-baseline-surahs" className="text-[11px] sm:text-[13px] font-medium mb-1.5 block">Surahs/day</label>
+                <input id="settings-baseline-surahs" type="number" min={0} value={settingsData.baselineSurahs || ""} onChange={(e) => setSettingsData((prev) => ({ ...prev, baselineSurahs: Number(e.target.value) }))} className="w-full text-[13px] px-2 sm:px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px] text-center" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="settings-baseline-ayahs" className="text-[11px] sm:text-[13px] font-medium mb-1.5 block">Ayahs/day</label>
+                <input id="settings-baseline-ayahs" type="number" min={0} value={settingsData.baselineAyahs || ""} onChange={(e) => setSettingsData((prev) => ({ ...prev, baselineAyahs: Number(e.target.value) }))} className="w-full text-[13px] px-2 sm:px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px] text-center" />
+              </div>
+            </div>
+            <button className="btn-primary w-full mt-4" onClick={handleSettingsSave} disabled={saving}>
+              {saving ? "Saving..." : "Save Settings"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -560,8 +560,62 @@ body {
   color: var(--color-muted);
 }
 
-/* Responsive */
+/* Scrollbar hide for tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive — mobile first */
 @media (max-width: 640px) {
+  .card { padding: 14px; border-radius: 14px; }
+  .card-elevated { padding: 14px; border-radius: 14px; }
+  .ayah-card { padding: 16px; }
+  .ayah-text { font-size: 1.25rem; }
+  .modal-box { padding: 16px; border-radius: 14px; }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
   .card { padding: 16px; }
   .card-elevated { padding: 16px; }
+}
+
+/* Tablet-specific: 2-col grids become 2-col */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-responsive-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Desktop: sidebar visible, adjust main padding */
+@media (min-width: 1025px) {
+  .mobile-only { display: none !important; }
+}
+
+/* Mobile: hide desktop-only */
+@media (max-width: 1024px) {
+  .desktop-only { display: none !important; }
+}
+
+/* Touch-friendly: larger targets on touch devices */
+@media (pointer: coarse) {
+  .checkbox { width: 24px; height: 24px; }
+  .task-row { min-height: 52px; }
+  .btn-primary, .btn-secondary, .btn-ghost { min-height: 48px; }
+}
+
+/* Safe area for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .toast {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Print: hide nav, simplify */
+@media print {
+  aside, nav.fixed { display: none !important; }
+  main { padding: 0 !important; }
 }

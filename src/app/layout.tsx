@@ -19,6 +19,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -62,8 +63,10 @@ export default function RootLayout({
         <ThemeProvider>
           <div className="flex min-h-screen">
             <Sidebar />
-            <main id="main-content" className="flex-1 px-4 py-6 max-w-[640px] mx-auto pb-24 lg:pb-7 lg:px-7">
-              {children}
+            <main id="main-content" className="flex-1 min-w-0 px-4 pt-5 pb-24 md:px-6 lg:px-8 lg:pb-6 lg:pt-6">
+              <div className="mx-auto max-w-[640px]">
+                {children}
+              </div>
             </main>
             <MobileNav />
           </div>

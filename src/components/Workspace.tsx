@@ -104,25 +104,25 @@ export function Workspace({
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-4">
-          <Link href={backHref} className="text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors">
+          <Link href={backHref} className="text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center -ml-2">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-[20px] font-bold tracking-tight truncate">{title}</h1>
-            {subtitle && <p className="text-[13px] text-[var(--color-muted)]">{subtitle}</p>}
+            <h1 className="text-[20px] sm:text-[22px] font-bold tracking-tight truncate">{title}</h1>
+            {subtitle && <p className="text-[12px] sm:text-[13px] text-[var(--color-muted)] truncate">{subtitle}</p>}
           </div>
         </div>
 
         {/* Dual Progress Bars */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] text-[var(--color-muted)] font-medium">Completion</span>
               <span className="text-[12px] font-bold tabular-nums">{completionPct}%</span>
             </div>
             <ProgressBar value={completionPct} goal={goal} />
           </div>
-          <div className="flex-1">
+          <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] text-[var(--color-muted)] font-medium">Mastery</span>
               <span className="text-[12px] font-bold tabular-nums">{masteryPct}%</span>
@@ -132,32 +132,34 @@ export function Workspace({
         </div>
         {gapWarning && (
           <div className="flex items-center gap-1.5 mt-2 text-[11px] text-[var(--color-warning)] font-medium">
-            <AlertTriangle className="h-3 w-3" />
+            <AlertTriangle className="h-3 w-3 shrink-0" />
             <span>Mastery lagging — practice needed</span>
           </div>
         )}
       </div>
 
       {/* Stages Bar */}
-      <div className="flex items-center gap-1 flex-wrap">
-        {stages.map((s, i) => (
-          <div key={s.key} className="flex items-center gap-1">
-            <button
-              onClick={() => onStageToggle?.(s.key, !s.done)}
-              disabled={saving || !onStageToggle}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
-                s.done
-                  ? "text-white"
-                  : "bg-transparent text-[var(--color-muted)] border border-[var(--color-border)] hover:border-current"
-              }`}
-              style={s.done ? { backgroundColor: goalColor } : undefined}
-            >
-              {s.done && <Check className="h-3 w-3" />}
-              {s.label}
-            </button>
-            {i < stages.length - 1 && <span className="text-[var(--color-border)]">→</span>}
-          </div>
-        ))}
+      <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-hide">
+        <div className="flex items-center gap-1.5 min-w-max">
+          {stages.map((s, i) => (
+            <div key={s.key} className="flex items-center gap-1.5">
+              <button
+                onClick={() => onStageToggle?.(s.key, !s.done)}
+                disabled={saving || !onStageToggle}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-all min-h-[40px] ${
+                  s.done
+                    ? "text-white"
+                    : "bg-transparent text-[var(--color-muted)] border border-[var(--color-border)] hover:border-current"
+                }`}
+                style={s.done ? { backgroundColor: goalColor } : undefined}
+              >
+                {s.done && <Check className="h-3 w-3 shrink-0" />}
+                <span className="whitespace-nowrap">{s.label}</span>
+              </button>
+              {i < stages.length - 1 && <span className="text-[var(--color-border)] text-[12px]">→</span>}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Main workspace */}
@@ -168,7 +170,7 @@ export function Workspace({
 
         {/* Notes */}
         <div className="lg:col-span-2">
-          <Card className="sticky top-4">
+          <Card className="lg:sticky lg:top-4">
             <div className="eyebrow mb-3">MY NOTES</div>
 
             {notesMode === "textarea" ? (
@@ -176,7 +178,7 @@ export function Workspace({
                 value={noteText}
                 onChange={(e) => handleTextareaChange(e.target.value)}
                 placeholder={notesPlaceholder}
-                className="w-full text-[13px] px-3 py-2 rounded-lg border border-[var(--color-border)] focus:border-[var(--color-career)] focus:ring-2 focus:ring-[var(--color-career)]/10 outline-none min-h-[300px] resize-y bg-transparent"
+                className="w-full text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] focus:border-[var(--color-career)] focus:ring-2 focus:ring-[var(--color-career)]/10 outline-none min-h-[200px] lg:min-h-[300px] resize-y bg-transparent"
               />
             ) : (
               <>
@@ -187,18 +189,18 @@ export function Workspace({
                     onChange={(e) => setNoteText(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addNote()}
                     placeholder={notesPlaceholder}
-                    className="flex-1 text-[13px] px-3 py-2 rounded-lg border border-[var(--color-border)] focus:border-[var(--color-career)] focus:ring-2 focus:ring-[var(--color-career)]/10 outline-none bg-transparent min-h-[48px]"
+                    className="flex-1 text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] focus:border-[var(--color-career)] focus:ring-2 focus:ring-[var(--color-career)]/10 outline-none bg-transparent min-h-[48px]"
                   />
                   <button
                     onClick={addNote}
                     disabled={saving || !noteText.trim()}
-                    className="btn-primary text-[13px] px-3"
+                    className="btn-primary text-[13px] px-4 min-h-[48px] min-w-[48px]"
                   >
                     +
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                <div className="space-y-2 max-h-[300px] lg:max-h-[500px] overflow-y-auto">
                   {notes.length === 0 ? (
                     <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No notes yet.</p>
                   ) : (
@@ -227,7 +229,7 @@ export function Workspace({
               </div>
               <button
                 onClick={() => setShowSelfTest(true)}
-                className="btn-secondary text-[12px] mt-2 w-full"
+                className="btn-secondary text-[13px] mt-2 w-full"
               >
                 Self-Test
               </button>
@@ -238,12 +240,12 @@ export function Workspace({
           {nav && (
             <div className="flex items-center justify-between mt-4">
               {nav.prev ? (
-                <Link href={nav.prev.href} className="text-[13px] text-[var(--color-career)] hover:underline">
+                <Link href={nav.prev.href} className="text-[13px] text-[var(--color-career)] hover:underline min-h-[44px] flex items-center">
                   ← {nav.prev.label}
                 </Link>
               ) : <div />}
               {nav.next ? (
-                <Link href={nav.next.href} className="text-[13px] text-[var(--color-career)] hover:underline">
+                <Link href={nav.next.href} className="text-[13px] text-[var(--color-career)] hover:underline min-h-[44px] flex items-center">
                   {nav.next.label} →
                 </Link>
               ) : <div />}
@@ -255,31 +257,31 @@ export function Workspace({
       {/* Self-Test Modal */}
       {showSelfTest && (
         <div className="modal-overlay show">
-          <div className="modal-box">
+          <div className="modal-box mx-4">
             <div className="eyebrow mb-3">SELF-TEST</div>
             <p className="text-[13px] mb-4">
               Lecture ke 3 key words recall karo. Honest rehna hai.
             </p>
-            <div className="flex items-center gap-3 mb-4">
-              <input type="text" placeholder="Key word 1..." className="flex-1 text-[13px] px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
-              <input type="text" placeholder="Key word 2..." className="flex-1 text-[13px] px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
-              <input type="text" placeholder="Key word 3..." className="flex-1 text-[13px] px-3 py-2 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+              <input type="text" placeholder="Key word 1..." className="flex-1 text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
+              <input type="text" placeholder="Key word 2..." className="flex-1 text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
+              <input type="text" placeholder="Key word 3..." className="flex-1 text-[13px] px-3 py-2.5 rounded-lg border border-[var(--color-border)] bg-transparent min-h-[48px]" />
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowSelfTest(false); onSelfTestResult?.("pass"); setToast({ visible: true, message: "InshAllah ✓" }); }}
-                className="flex-1 btn-deen rounded-lg"
+                className="flex-1 btn-deen rounded-lg min-h-[48px]"
               >
                 Yaad hai
               </button>
               <button
                 onClick={() => { setShowSelfTest(false); onSelfTestResult?.("fail"); setToast({ visible: true, message: "Revision rescheduled" }); }}
-                className="flex-1 btn-secondary rounded-lg"
+                className="flex-1 btn-secondary rounded-lg min-h-[48px]"
               >
                 Nahi yaad
               </button>
             </div>
-            <button onClick={() => setShowSelfTest(false)} className="w-full mt-3 btn-ghost text-[12px]">
+            <button onClick={() => setShowSelfTest(false)} className="w-full mt-3 btn-ghost text-[12px] min-h-[44px]">
               Cancel
             </button>
           </div>

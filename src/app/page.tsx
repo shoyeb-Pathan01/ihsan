@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Moon } from "lucide-react";
+import { ArrowRight, Moon } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { TheLine } from "@/components/ui/TheLine";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -97,22 +97,22 @@ export default function TodayPage() {
 
       {/* Header */}
       <div className="flex justify-between items-start gap-4">
-        <div>
-          <p className="text-[12px] text-[var(--color-muted)] font-medium tabular-nums">
+        <div className="min-w-0">
+          <p className="text-[11px] sm:text-[12px] text-[var(--color-muted)] font-medium tabular-nums">
             Day {dayNumber} of 110 · {dayOfWeek} · Sprint {sprint}
           </p>
-          <h1 className="text-[26px] font-bold mt-1 tracking-tight">Today</h1>
+          <h1 className="text-[24px] sm:text-[26px] font-bold mt-1 tracking-tight">Today</h1>
         </div>
-        <Link href="/review" className="text-[13px] text-[var(--color-career)] font-medium hover:underline flex items-center gap-1">
+        <Link href="/review" className="text-[13px] text-[var(--color-career)] font-medium hover:underline flex items-center gap-1 shrink-0 min-h-[44px]">
           Review <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
 
-      {/* NOW Card — elevated, the ONLY elevated card */}
+      {/* NOW Card */}
       {now && (
         <Card elevated className="card-career animate-slide-in">
           <div className="eyebrow mb-2">NOW</div>
-          <p className="font-bold text-[15px] mb-3">{now.label}</p>
+          <p className="font-bold text-[14px] sm:text-[15px] mb-3">{now.label}</p>
           <button
             onClick={() => markTaskDone(now.type, now.id)}
             disabled={saving === now.id}
@@ -149,14 +149,14 @@ export default function TodayPage() {
                   className={`task-row ${task.type === "tahajjud" ? "card-deen" : ""}`}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums">{i + 1}</span>
-                    <span className="text-[14px] font-medium truncate">{task.label}</span>
+                    <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-5 text-right shrink-0">{i + 1}</span>
+                    <span className="text-[13px] sm:text-[14px] font-medium truncate">{task.label}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {task.type !== "tahajjud" ? (
                       <Link
                         href={href}
-                        className={`text-[12px] px-3 py-1.5 rounded-lg font-medium ${
+                        className={`text-[12px] px-3 py-2 rounded-lg font-medium min-h-[40px] flex items-center ${
                           goal === "career"
                             ? "bg-[var(--color-career-soft)] text-[var(--color-career)]"
                             : "bg-[var(--color-deen-soft)] text-[var(--color-deen)]"
@@ -168,11 +168,7 @@ export default function TodayPage() {
                       <button
                         onClick={() => quickLog("tahajjud")}
                         disabled={saving === "tahajjud"}
-                        className={`text-[12px] px-3 py-1.5 rounded-lg font-medium ${
-                          ql.tahajjudToday
-                            ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)]"
-                            : "bg-[var(--color-deen-soft)] text-[var(--color-deen)]"
-                        }`}
+                        className="text-[12px] px-3 py-2 rounded-lg font-medium min-h-[40px] bg-[var(--color-deen-soft)] text-[var(--color-deen)]"
                       >
                         {ql.tahajjudToday ? "✓ Done" : "✓ tap"}
                       </button>
@@ -188,54 +184,58 @@ export default function TodayPage() {
       {/* QUICK LOG */}
       <Card>
         <div className="eyebrow mb-3">QUICK LOG</div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] text-[var(--color-muted)]">Qur&apos;an:</span>
-            {["5", "10", "20"].map((p) => (
-              <button
-                key={p}
-                onClick={() => quickLog("reading", p)}
-                disabled={saving === "reading"}
-                className={`text-[12px] px-3 py-1.5 rounded-lg font-medium border transition-colors ${
-                  ql.readingToday >= parseInt(p)
-                    ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen-soft)]"
-                    : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-deen)]"
-                }`}
-              >
-                {p}pg
-              </button>
-            ))}
-            <input
-              type="number"
-              min="1"
-              value={readingInput}
-              onChange={(e) => setReadingInput(e.target.value)}
-              placeholder="?"
-              className="w-14 text-[12px] px-2 py-1.5 rounded-lg border border-[var(--color-border)] text-center bg-transparent"
-            />
-            {readingInput && (
-              <button
-                onClick={() => { quickLog("reading", readingInput); setReadingInput(""); }}
-                disabled={saving === "reading"}
-                className="text-[12px] px-3 py-1.5 rounded-lg font-medium bg-[var(--color-deen)] text-white"
-              >
-                ✓
-              </button>
-            )}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px] text-[var(--color-muted)] shrink-0">Qur&apos;an:</span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {["5", "10", "20"].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => quickLog("reading", p)}
+                  disabled={saving === "reading"}
+                  className={`text-[12px] px-3 py-2 rounded-lg font-medium border transition-colors min-h-[40px] ${
+                    ql.readingToday >= parseInt(p)
+                      ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen-soft)]"
+                      : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-deen)]"
+                  }`}
+                >
+                  {p}pg
+                </button>
+              ))}
+              <input
+                type="number"
+                min="1"
+                value={readingInput}
+                onChange={(e) => setReadingInput(e.target.value)}
+                placeholder="?"
+                className="w-14 text-[12px] px-2 py-2 rounded-lg border border-[var(--color-border)] text-center bg-transparent min-h-[40px]"
+              />
+              {readingInput && (
+                <button
+                  onClick={() => { quickLog("reading", readingInput); setReadingInput(""); }}
+                  disabled={saving === "reading"}
+                  className="text-[12px] px-3 py-2 rounded-lg font-medium bg-[var(--color-deen)] text-white min-h-[40px] min-w-[40px] flex items-center justify-center"
+                >
+                  ✓
+                </button>
+              )}
+            </div>
           </div>
-          <div className="h-4 w-px bg-[var(--color-border)]" />
-          <button
-            onClick={() => quickLog("tahajjud")}
-            disabled={saving === "tahajjud"}
-            className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg font-medium border transition-colors ${
-              ql.tahajjudToday
-                ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen-soft)]"
-                : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-deen)]"
-            }`}
-          >
-            <Moon className="h-3 w-3" />
-            Tahajjud {ql.tahajjudToday ? "✓" : ""}
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-[var(--color-border)]" />
+            <button
+              onClick={() => quickLog("tahajjud")}
+              disabled={saving === "tahajjud"}
+              className={`flex items-center gap-1.5 text-[12px] px-3 py-2 rounded-lg font-medium border transition-colors min-h-[40px] ${
+                ql.tahajjudToday
+                  ? "bg-[var(--color-deen-soft)] text-[var(--color-deen)] border-[var(--color-deen-soft)]"
+                  : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-deen)]"
+              }`}
+            >
+              <Moon className="h-3 w-3" />
+              Tahajjud {ql.tahajjudToday ? "✓" : ""}
+            </button>
+          </div>
         </div>
         {ql.readingToday > 0 && (
           <p className="mt-2 text-[12px] text-[var(--color-muted)]">Today: {ql.readingToday} pages read</p>
@@ -252,11 +252,11 @@ export default function TodayPage() {
               <span className="text-[13px] font-medium text-[var(--color-career)]">Career</span>
               <span className="text-[12px] text-[var(--color-muted)] tabular-nums">{careerDaysActive}/7</span>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1 sm:gap-1.5">
               {careerDots.map((dot, i) => (
                 <div
                   key={i}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-colors ${
                     dot.active ? "bg-[var(--color-career)] text-white" : "bg-[var(--color-border)] text-[var(--color-muted)]"
                   }`}
                   title={dot.date}
@@ -270,11 +270,11 @@ export default function TodayPage() {
               <span className="text-[13px] font-medium text-[var(--color-deen)]">Deen</span>
               <span className="text-[12px] text-[var(--color-muted)] tabular-nums">{deenDaysActive}/7</span>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1 sm:gap-1.5">
               {deenDots.map((dot, i) => (
                 <div
                   key={i}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-colors ${
                     dot.active ? "bg-[var(--color-deen)] text-white" : "bg-[var(--color-border)] text-[var(--color-muted)]"
                   }`}
                   title={dot.date}
@@ -284,25 +284,25 @@ export default function TodayPage() {
           </div>
         </div>
         {azureStreakRisk && (
-          <div className="mt-3 p-2 rounded-lg text-[12px] badge-warning">
+          <div className="mt-3 p-2.5 rounded-lg text-[12px] badge-warning">
             ⚠ Azure — 2+ days untouched
           </div>
         )}
       </Card>
 
       {/* Progress mini */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Card goal="career">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[13px] font-medium text-[var(--color-career)]">Career</span>
-            <span className="text-[13px] font-bold tabular-nums">{azureProgress}%</span>
+            <span className="text-[12px] sm:text-[13px] font-medium text-[var(--color-career)]">Career</span>
+            <span className="text-[12px] sm:text-[13px] font-bold tabular-nums">{azureProgress}%</span>
           </div>
           <ProgressBar value={azureProgress} goal="career" />
         </Card>
         <Card goal="deen">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[13px] font-medium text-[var(--color-deen)]">Deen</span>
-            <span className="text-[13px] font-bold tabular-nums">{arabicProgress}%</span>
+            <span className="text-[12px] sm:text-[13px] font-medium text-[var(--color-deen)]">Deen</span>
+            <span className="text-[12px] sm:text-[13px] font-bold tabular-nums">{arabicProgress}%</span>
           </div>
           <ProgressBar value={arabicProgress} goal="deen" />
         </Card>
