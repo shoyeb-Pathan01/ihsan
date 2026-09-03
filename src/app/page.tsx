@@ -9,7 +9,6 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { AyahCard } from "@/components/ui/AyahCard";
 import { Toast } from "@/components/ui/Toast";
 import { SkeletonPage } from "@/components/ui/Skeleton";
-import { EmptyState } from "@/components/ui/EmptyState";
 
 interface TodayData {
   profile: { name: string; mission_start: string; mission_end: string };
@@ -85,9 +84,9 @@ export default function TodayPage() {
   };
 
   if (loading) return <SkeletonPage />;
-  if (!data) return <EmptyState title="Kuch masla hua" message="Data safe hai, try again." />;
+  if (!data) return <div className="text-center py-12"><p className="text-[15px] font-medium">Kuch masla hua</p><p className="text-[13px] text-[var(--color-muted)]">Data safe hai, try again.</p></div>;
 
-  const { dayNumber, dayOfWeek, sprint, daysRemaining, now, today3, quickLog: ql, careerDots, deenDots, careerDaysActive, deenDaysActive, azureStreakRisk, reminder, arabicProgress, azureProgress, allDone } = data;
+  const { dayNumber, dayOfWeek, sprint, daysRemaining, now, today3, quickLog: ql, careerDots, deenDots, careerDaysActive, deenDaysActive, azureStreakRisk, reminder, arabicProgress, azureProgress } = data;
   const quote = quotes[new Date().getDate() % quotes.length];
 
   return (
@@ -120,16 +119,6 @@ export default function TodayPage() {
           >
             {saving === now.id ? "Saving..." : "Start →"}
           </button>
-        </Card>
-      )}
-
-      {/* All done state */}
-      {!now && (
-        <Card className="card-deen animate-slide-in">
-          <EmptyState
-            title="✦ Sab mukammal."
-            message="Bonus: extra reading if you wish."
-          />
         </Card>
       )}
 
