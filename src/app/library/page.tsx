@@ -40,10 +40,11 @@ const tabs: Tab[] = [
 ];
 
 interface ArabicLecture {
-  id: number;
-  lecture: string;
+  id: string;
+  lecture_number: number;
+  title: string;
   status: string;
-  youtube: string;
+  youtube_url: string;
 }
 
 interface AzureSession {
@@ -283,22 +284,22 @@ export default function LibraryPage() {
 
           {loading ? (
             <p className="text-[13px] text-[var(--color-muted)]">Loading...</p>
-          ) : (searchQuery ? arabicLectures.filter((l) => l.lecture.toLowerCase().includes(searchQuery.toLowerCase()) || String(l.id).includes(searchQuery) || l.status.toLowerCase().includes(searchQuery.toLowerCase())) : arabicLectures).length === 0 ? (
+          ) : (searchQuery ? arabicLectures.filter((l) => l.title.toLowerCase().includes(searchQuery.toLowerCase()) || String(l.lecture_number).includes(searchQuery) || l.status.toLowerCase().includes(searchQuery.toLowerCase())) : arabicLectures).length === 0 ? (
             <p className="text-[13px] text-[var(--color-muted)] text-center py-8">No lectures found.</p>
           ) : (
             <div className="space-y-2">
-              {(searchQuery ? arabicLectures.filter((l) => l.lecture.toLowerCase().includes(searchQuery.toLowerCase()) || String(l.id).includes(searchQuery) || l.status.toLowerCase().includes(searchQuery.toLowerCase())) : arabicLectures).map((lecture) => (
+              {(searchQuery ? arabicLectures.filter((l) => l.title.toLowerCase().includes(searchQuery.toLowerCase()) || String(l.lecture_number).includes(searchQuery) || l.status.toLowerCase().includes(searchQuery.toLowerCase())) : arabicLectures).map((lecture) => (
                 <div key={lecture.id} className="card card-deen flex items-center justify-between gap-3 py-3 px-3 sm:px-4">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-6 sm:w-8 text-right shrink-0">{lecture.id}</span>
+                    <span className="text-[var(--color-muted)] font-mono text-[12px] tabular-nums w-6 sm:w-8 text-right shrink-0">{lecture.lecture_number}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium truncate">{lecture.lecture}</p>
+                      <p className="text-[13px] font-medium truncate">{lecture.title}</p>
                       <span className="text-[11px] text-[var(--color-muted)] capitalize">{lecture.status}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {lecture.youtube && (
-                      <a href={lecture.youtube} target="_blank" rel="noopener noreferrer" className="text-[var(--color-muted)] hover:text-[var(--color-deen)] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
+                    {lecture.youtube_url && (
+                      <a href={lecture.youtube_url} target="_blank" rel="noopener noreferrer" className="text-[var(--color-muted)] hover:text-[var(--color-deen)] p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
                         <ExternalLink size={14} />
                       </a>
                     )}
